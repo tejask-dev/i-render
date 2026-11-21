@@ -1,6 +1,14 @@
-# Rendi droplet shell (Brian)
+# Rendi droplet shell
 
-This four-piece enclosure holds Rendi’s microphone, speaker and faceplate.
+## Brian’s current print
+
+Brian is printing a roughly 140 mm tall shell with four pin sockets. Keep his **01 front** and **02 back** together. Choose **03** for raised eyes or **04** for two LEDs. Both plates enter from the outside and rest on the front lip. Test one **06 loose pin** before fitting all four. The **05 standard pin** has slight interference in the digital model.
+
+Let a clean print finish. In Bambu Studio, the unsupported front produced a cantilever warning. Inspect the faceplate seat when it comes off the bed. If the seat has sagged enough to prevent insertion, only the front needs a supported reprint. On a P1S with a 0.4 mm nozzle and Generic PLA, Bambu Studio estimated about two hours and 49.5 g for that front, or ten minutes and 0.87 g for four spare loose pins. The rear cable opening measures about 9.9 × 3.6 mm straight through. Dry-fit the actual plug before closing. For rehearsal, the mic can sit at the front crescent and the speaker behind the rear grille. Verify audibility at one metre.
+
+## Ring-joined fallback in this repo
+
+The files below form a separate 120 mm enclosure with a join ring and its own faceplate. Use its files together if the team needs a replacement enclosure.
 
 **The four pieces are sliced for a Bambu P1S.** The plate estimate is **2 h 49 min and 76.89 g PLA**. Dimensions and clearances below come from the digital mesh. Physical fit awaits the first print. [Open the Bambu Studio project](slicing/Rendi-P1S.3mf) · [Printer settings and queue instructions](slicing/README.md)
 
