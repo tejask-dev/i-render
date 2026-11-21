@@ -1,0 +1,14 @@
+{
+  "Desk Rover": {
+    "project_name": "Desk Rover",
+    "note": "Toy wheels and the RC car motors carried this little rover.",
+    "outcome": "worked",
+    "keywords": "drive wheel wheels rover car motor gearbox"
+  },
+  "Glow Owl": {
+    "project_name": "Glow Owl",
+    "note": "The flashlight LED worked in the owl's eyes.",
+    "outcome": "worked",
+    "keywords": "light led glow light_up flashlight owl eyes"
+  }
+}

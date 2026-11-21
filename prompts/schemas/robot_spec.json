@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Function": {
+      "properties": {
+        "name": {
+          "enum": [
+            "drive",
+            "walk",
+            "light_up",
+            "make_sound",
+            "grab",
+            "spin",
+            "sense_distance",
+            "display_face",
+            "fly_ish"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "parts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Parts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "parts"
+      ],
+      "title": "Function",
+      "type": "object"
+    },
+    "Part": {
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,30}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "primitive": {
+          "enum": [
+            "rounded_box",
+            "box",
+            "cylinder",
+            "sphere",
+            "cone",
+            "wheel",
+            "arm_link",
+            "servo_mount",
+            "motor_mount",
+            "antenna"
+          ],
+          "title": "Primitive",
+          "type": "string"
+        },
+        "dims_mm": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "title": "Dims Mm",
+          "type": "array"
+        },
+        "pos_mm": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Pos Mm",
+          "type": "array"
+        },
+        "rot_deg": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Rot Deg",
+          "type": "array"
+        },
+        "attach_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attach To"
+        },
+        "category": {
+          "enum": [
+            "structure",
+            "motion",
+            "sensor",
+            "light",
+            "sound",
+            "decor"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Function"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "primitive",
+        "dims_mm",
+        "pos_mm",
+        "category"
+      ],
+      "title": "Part",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "robot_name": {
+      "title": "Robot Name",
+      "type": "string"
+    },
+    "parts": {
+      "items": {
+        "$ref": "#/$defs/Part"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Parts",
+      "type": "array"
+    },
+    "functions": {
+      "items": {
+        "$ref": "#/$defs/Function"
+      },
+      "title": "Functions",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    }
+  },
+  "required": [
+    "robot_name",
+    "parts",
+    "functions",
+    "assumptions",
+    "confidence"
+  ],
+  "title": "RobotSpec",
+  "type": "object"
+}

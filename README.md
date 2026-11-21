@@ -35,6 +35,17 @@ Use on-device Qwen for the team’s youth-outreach workbench. Google restricts t
 
 SQLite stores briefs, plans, recognition results and saved projects under `.var/workbench/`. Normalized sketch and donor photos and generated files are stored there too. Set `RENDI_STATE_DIR` before starting to rehearse with a separate notebook. `/api/config` reports `demo_store: true` only when the server is using this folder’s `.var/workbench/`. Keep this local directory and environment keys private.
 
+## Shared data contracts
+
+| Payload | Where to find it |
+| --- | --- |
+| [ProjectBrief](prompts/schemas/project_brief.json) | Request body for `POST /api/brief` and the `brief` field in a saved project |
+| [RobotSpec](prompts/schemas/robot_spec.json) | `spec` in a sketch response or a saved project. The CAD builder also checks dimensions, parent cycles and part references. |
+| [Inventory](prompts/schemas/inventory.json) | `inventory` in a drawer response or a saved project. Manual entries have no photo box. |
+| [BuildPlan](prompts/schemas/build_plan.json) | `plan` in a matching response or a saved project. Each allocation identifies a required component unit. |
+
+After changing the Python brief or robot model, regenerate its exported contract with `.venv/bin/python -m eval.check_contracts --write-models`. To check all four contracts against the portable notebook and fresh manual plans, run `uv run --no-project --python .venv/bin/python --with jsonschema python -m eval.check_contracts`. The validator is a development dependency.
+
 ## Verification
 
 `python -m backend.check_cad` checks the CAD solids with the project environment active. `python -m backend.salvage` checks the component counts. The end-to-end check writes an Eval Rover into the notebook it runs against, so it defaults to a rehearsal server on port 8768 and exits before writing if the server reports `demo_store: true`. Start the rehearsal server in one terminal:

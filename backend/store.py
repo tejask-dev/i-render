@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATE = Path(os.environ.get("RENDI_STATE_DIR", ROOT / ".var" / "workbench")).resolve()
 FILES = STATE / "models"
 PHOTOS = STATE / "photos"
+SEED_PROJECTS = ROOT / "data" / "seed_projects.json"
 
 
 def initialize():
@@ -27,30 +28,29 @@ def initialize():
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY, plan_id TEXT UNIQUE, payload TEXT NOT NULL);
         """)
-        seeds = [
-            (
-                "Desk Rover",
-                "Toy wheels and the RC car motors carried this little rover.",
-                "drive wheel wheels rover car motor gearbox",
-            ),
-            (
-                "Glow Owl",
-                "The flashlight LED worked in the owl's eyes.",
-                "light led glow light_up flashlight owl eyes",
-            ),
-        ]
-        for name, note, keywords in seeds:
-            payload = {
-                "project_name": name,
-                "note": note,
-                "outcome": "worked",
-                "keywords": keywords,
-                "seeded": True,
-            }
+        seeds = json.loads(SEED_PROJECTS.read_text(encoding="utf-8"))
+        if not isinstance(seeds, dict):
+            raise ValueError("seed_projects.json must map stable example IDs to project records")
+        for key, record in seeds.items():
+            fields = ("project_name", "note", "outcome", "keywords")
+            if not key.strip() or not isinstance(record, dict) or not all(
+                isinstance(record.get(k), str) and record[k].strip() for k in fields
+            ):
+                raise ValueError(f"Invalid example {key!r} in seed_projects.json; supply {', '.join(fields)}")
+            payload = {k: record[k] for k in fields}
+            payload["seeded"] = True
             db.execute(
-                "INSERT OR IGNORE INTO projects VALUES (?,NULL,?)",
-                (name, json.dumps(payload)),
+                """INSERT INTO projects(id,plan_id,payload) VALUES (?,NULL,?)
+                   ON CONFLICT(id) DO UPDATE SET payload=excluded.payload
+                   WHERE projects.plan_id IS NULL AND json_extract(projects.payload, '$.seeded') = 1
+                         AND projects.payload != excluded.payload""",
+                (key, json.dumps(payload)),
             )
+        db.execute(
+            """DELETE FROM projects WHERE plan_id IS NULL AND json_extract(payload, '$.seeded') = 1
+               AND id NOT IN (SELECT value FROM json_each(?))""",
+            (json.dumps(list(seeds)),),
+        )
 
 
 def connect():
@@ -134,20 +134,19 @@ def search(query):
         return []
     with closing(connect()) as db:
         rows = db.execute(
-            "SELECT id,payload FROM projects ORDER BY rowid DESC"
+            "SELECT id,plan_id,payload FROM projects ORDER BY rowid DESC"
         ).fetchall()
     hits = []
-    for key, raw in rows:
+    for key, plan_id, raw in rows:
         record = json.loads(raw)
         overlap = words & terms(
             " ".join([record["project_name"], record["note"], record["keywords"]])
         )
         if overlap:
-            result = {
-                k: record[k] for k in ("project_name", "note", "seeded", "outcome")
-            }
+            result = {k: record[k] for k in ("project_name", "note", "outcome")}
+            result["seeded"] = plan_id is None
             result["project_id"] = None if result["seeded"] else key
-            hits.append((len(overlap), not record["seeded"], result))
+            hits.append((len(overlap), not result["seeded"], result))
     # Prefer a maker's actual saved project over a seeded example on a related query.
     hits.sort(key=lambda x: (x[1], x[0]), reverse=True)
     return [hit[2] for hit in hits[:2]]

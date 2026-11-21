@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inventory",
+  "description": "The inventory object inside a drawer or saved-project response. Array positions identify donors throughout the plan.",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 15,
+      "items": { "$ref": "#/$defs/donor" }
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Local route for the normalized drawer photo, when one was saved."
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": ["string", "integer"],
+      "description": "Optional stored object identity. Repeated values can identify multiple observations of one donor."
+    },
+    "donor": {
+      "type": "object",
+      "required": ["label", "raw_name"],
+      "properties": {
+        "label": { "type": "string", "description": "Normalized salvage-map key or other." },
+        "raw_name": { "type": "string" },
+        "detected_label": { "type": "string", "description": "Original model label retained for duplicate detection when confidence was low." },
+        "box_2d": {
+          "type": ["array", "null"],
+          "description": "[top, left, bottom, right], normalized to 0–1000. Manual items have no image box.",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "type": "integer", "minimum": 0, "maximum": 1000 }
+        },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "condition_note": { "type": ["string", "null"] },
+        "blocked": { "type": "boolean" },
+        "candidate_parts": {
+          "type": "object",
+          "description": "Candidate quantities keyed by component ID. An empty object contributes no units.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "item_id": { "$ref": "#/$defs/identity" },
+        "id": { "$ref": "#/$defs/identity" },
+        "user_excluded": { "type": "boolean" },
+        "duplicate_of": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero-based index of the retained detection in an older saved inventory whose positions must be preserved."
+        }
+      }
+    }
+  }
+}

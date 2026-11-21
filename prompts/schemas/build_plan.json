@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BuildPlan",
+  "description": "The normalized plan inside a plan or saved-project response. The server reconstructs allocations for plans saved before per-unit matching.",
+  "type": "object",
+  "required": ["from_your_drawer", "to_source", "drawer_score", "steps", "memory_notes", "allocations", "held_out"],
+  "properties": {
+    "from_your_drawer": { "type": "array", "items": { "$ref": "#/$defs/drawer_row" } },
+    "to_source": { "type": "array", "items": { "$ref": "#/$defs/sourcing_row" } },
+    "drawer_score": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Percentage of required units with drawer candidates, rounded to a whole number." },
+    "steps": { "$ref": "#/$defs/strings" },
+    "memory_notes": { "$ref": "#/$defs/strings" },
+    "allocations": { "type": "array", "items": { "$ref": "#/$defs/allocation" } },
+    "held_out": { "type": "array", "items": { "$ref": "#/$defs/held_donor" } }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "index": { "type": "integer", "minimum": 0, "description": "Zero-based position in inventory.items." },
+    "quantity": { "type": "integer", "minimum": 1 },
+    "box": {
+      "type": ["array", "null"],
+      "description": "[top, left, bottom, right], normalized to 0–1000. Manual donors have no box.",
+      "minItems": 4, "maxItems": 4,
+      "items": { "type": "integer", "minimum": 0, "maximum": 1000 }
+    },
+    "drawer_row": {
+      "type": "object",
+      "required": ["need", "qty", "source", "item_index", "item_id", "raw_name", "box_2d", "how", "tools", "part_ids", "functions"],
+      "properties": {
+        "need": { "type": "string" },
+        "qty": { "$ref": "#/$defs/quantity" },
+        "source": { "type": "string", "description": "Display name of the donor type." },
+        "item_index": { "$ref": "#/$defs/index" },
+        "item_id": { "type": "string", "description": "Stored donor identity as text, or item-{index} for a donor with no explicit identity." },
+        "raw_name": { "type": "string" },
+        "box_2d": { "$ref": "#/$defs/box" },
+        "how": { "type": "string" },
+        "tools": { "$ref": "#/$defs/strings" },
+        "part_ids": { "$ref": "#/$defs/strings" },
+        "functions": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "sourcing_row": {
+      "type": "object",
+      "required": ["need", "qty", "suggestion", "part_ids", "functions"],
+      "properties": {
+        "need": { "type": "string" },
+        "qty": { "$ref": "#/$defs/quantity" },
+        "suggestion": { "type": "string" },
+        "part_ids": { "$ref": "#/$defs/strings" },
+        "functions": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "allocation": {
+      "type": "object",
+      "description": "One unit of a component need. A unit without a host mesh still belongs to its listed functions.",
+      "required": ["unit", "need", "functions", "part_id", "part_label", "status", "item_index", "item_id", "raw_name", "source", "box_2d"],
+      "properties": {
+        "unit": { "type": "string" },
+        "need": { "type": "string" },
+        "functions": { "$ref": "#/$defs/strings" },
+        "part_id": { "type": ["string", "null"] },
+        "part_label": { "type": ["string", "null"] },
+        "status": { "enum": ["drawer", "source"] }
+      },
+      "if": { "properties": { "status": { "const": "drawer" } } },
+      "then": {
+        "properties": {
+          "item_index": { "$ref": "#/$defs/index" }, "item_id": { "type": "string" },
+          "raw_name": { "type": "string" }, "source": { "type": "string" },
+          "box_2d": { "$ref": "#/$defs/box" }
+        }
+      },
+      "else": {
+        "properties": {
+          "item_index": { "type": "null" }, "item_id": { "type": "null" },
+          "raw_name": { "type": "null" }, "source": { "type": "null" }, "box_2d": { "type": "null" }
+        }
+      }
+    },
+    "held_donor": {
+      "type": "object",
+      "required": ["item_index", "item_id", "raw_name", "label", "blocked", "reason"],
+      "properties": {
+        "item_index": { "$ref": "#/$defs/index" },
+        "item_id": { "type": "string" },
+        "raw_name": { "type": "string" },
+        "label": { "type": ["string", "null"] },
+        "blocked": { "type": "boolean", "description": "A duplicate or manually excluded donor may be held out while this safety flag remains false." },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}

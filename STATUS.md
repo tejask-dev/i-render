@@ -4,6 +4,8 @@ Open **Start Demo.command**, then open Snack Scout. Select **Wheel 4**. The insp
 
 ## What the team can show
 
+Zlata can now check prompt outputs against the four shared data contracts and edit the two notebook examples in JSON. Saved projects keep their own notes. [Payloads and verification command](README.md#shared-data-contracts) · [Example project data](data/seed_projects.json)
+
 | Evidence | Observed result |
 | --- | --- |
 | Fresh photo input | Local Qwen read three distinct reference drawings. Each produced its expected family of named parts and exported geometry. The three fresh reference drawer montages each yielded all five expected identities with boxes on the corresponding objects. Each photographed fan stayed excluded pending physical inspection. |

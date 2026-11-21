@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "project_name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Project Name",
+      "type": "string"
+    },
+    "scale": {
+      "enum": [
+        "handheld",
+        "desktop",
+        "floor",
+        "wearable"
+      ],
+      "title": "Scale",
+      "type": "string"
+    },
+    "approx_size_cm": {
+      "maximum": 150,
+      "minimum": 3,
+      "title": "Approx Size Cm",
+      "type": "integer"
+    },
+    "vibe": {
+      "items": {
+        "maxLength": 100,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Vibe",
+      "type": "array"
+    },
+    "adventure_aura": {
+      "maxLength": 600,
+      "minLength": 1,
+      "title": "Adventure Aura",
+      "type": "string"
+    },
+    "must_do": {
+      "items": {
+        "enum": [
+          "drive",
+          "walk",
+          "light_up",
+          "make_sound",
+          "grab",
+          "spin",
+          "sense_distance",
+          "display_face",
+          "fly_ish"
+        ],
+        "type": "string"
+      },
+      "maxItems": 9,
+      "minItems": 1,
+      "title": "Must Do",
+      "type": "array"
+    },
+    "user_notes": {
+      "default": "",
+      "maxLength": 600,
+      "title": "User Notes",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_name",
+    "scale",
+    "approx_size_cm",
+    "vibe",
+    "adventure_aura",
+    "must_do"
+  ],
+  "title": "ProjectBrief",
+  "type": "object"
+}
