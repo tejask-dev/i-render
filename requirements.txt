@@ -1,0 +1,11 @@
+fastapi==0.165.0
+uvicorn==0.54.0
+pydantic==2.14.4
+python-multipart==0.0.34
+pillow==13.0.0
+pillow-heif==1.8.1
+httpx==0.28.1
+numpy==2.5.5
+trimesh==4.12.2
+manifold3d==3.5.5
+scipy==1.18.1

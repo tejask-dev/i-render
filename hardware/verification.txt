@@ -1,0 +1,77 @@
+
+rendi_front_half.stl: 531500 tris, 265744 verts
+   print bbox [85.0, 119.96, 41.62] mm, z from 0.000
+   volume 24.24 cm3 (~30 g if solid PLA), area 213.7 cm2, genus 4
+   [PASS] watertight: every edge shared by exactly 2 faces, consistent winding
+   [PASS] single connected shell (found 1)
+   [PASS] no collapsed triangles
+   [PASS] positive volume (normals point outward)
+   [PASS] sits on z=0 and fits a 180 mm bed
+   bed contact area 487 mm2
+   [PASS] has a real flat bed face
+   overhang steeper than 45 deg: 718 mm2 within 30 deg of flat (up to z=39.1), 1874 mm2 at 30-45 deg
+
+rendi_back_half.stl: 593448 tris, 296650 verts
+   print bbox [84.99, 119.92, 42.5] mm, z from 0.000
+   volume 27.34 cm3 (~34 g if solid PLA), area 248.2 cm2, genus 38
+   [PASS] watertight: every edge shared by exactly 2 faces, consistent winding
+   [PASS] single connected shell (found 1)
+   [PASS] no collapsed triangles
+   [PASS] positive volume (normals point outward)
+   [PASS] sits on z=0 and fits a 180 mm bed
+   bed contact area 552 mm2
+   [PASS] has a real flat bed face
+   overhang steeper than 45 deg: 1187 mm2 within 30 deg of flat (up to z=40.3), 2543 mm2 at 30-45 deg
+
+rendi_join_ring.stl: 228492 tris, 114246 verts
+   print bbox [79.8, 103.4, 6.0] mm, z from 0.000
+   volume 2.73 cm3 (~3 g if solid PLA), area 42.6 cm2, genus 1
+   [PASS] watertight: every edge shared by exactly 2 faces, consistent winding
+   [PASS] single connected shell (found 1)
+   [PASS] no collapsed triangles
+   [PASS] positive volume (normals point outward)
+   [PASS] sits on z=0 and fits a 180 mm bed
+   bed contact area 310 mm2
+   [PASS] has a real flat bed face
+   overhang steeper than 45 deg: 52 mm2 within 30 deg of flat (up to z=5.6), 78 mm2 at 30-45 deg
+
+rendi_faceplate.stl: 316928 tris, 158466 verts
+   print bbox [60.11, 37.82, 16.74] mm, z from 0.000
+   volume 3.31 cm3 (~4 g if solid PLA), area 60.6 cm2, genus 0
+   [PASS] watertight: every edge shared by exactly 2 faces, consistent winding
+   [PASS] single connected shell (found 1)
+   [PASS] no collapsed triangles
+   [PASS] positive volume (normals point outward)
+   [PASS] sits on z=0 and fits a 180 mm bed
+   bed contact area 1741 mm2
+   [PASS] has a real flat bed face
+   overhang steeper than 45 deg: 21 mm2 within 30 deg of flat (up to z=7.5), 19 mm2 at 30-45 deg
+
+Assembled-position checks (design SDF sampled at the other part's vertices)
+   rendi_front_half -> rendi_back_half: min gap -0.000 mm (seam faces touch)
+   [PASS] no interference, gap >= 0.00 - 0.05 mm mesh tolerance
+   rendi_back_half -> rendi_front_half: min gap +0.000 mm (seam faces touch)
+   [PASS] no interference, gap >= 0.00 - 0.05 mm mesh tolerance
+   rendi_join_ring -> rendi_front_half: min gap +0.194 mm (ring radial clearance)
+   [PASS] no interference, gap >= 0.20 - 0.05 mm mesh tolerance
+   rendi_join_ring -> rendi_back_half: min gap +0.194 mm (ring radial clearance)
+   [PASS] no interference, gap >= 0.20 - 0.05 mm mesh tolerance
+   rendi_front_half -> rendi_join_ring: min gap +0.189 mm (ring radial clearance)
+   [PASS] no interference, gap >= 0.20 - 0.05 mm mesh tolerance
+   rendi_back_half -> rendi_join_ring: min gap +0.189 mm (ring radial clearance)
+   [PASS] no interference, gap >= 0.20 - 0.05 mm mesh tolerance
+   rendi_faceplate -> rendi_front_half: min gap +0.061 mm (taper fit, see README)
+   [PASS] no interference, gap >= 0.00 - 0.05 mm mesh tolerance
+   rendi_front_half -> rendi_faceplate: min gap +0.060 mm (taper fit, see README)
+   [PASS] no interference, gap >= 0.00 - 0.05 mm mesh tolerance
+   rendi_faceplate -> rendi_back_half: min gap +24.500 mm (free)
+   [PASS] no interference, gap >= 1.00 - 0.05 mm mesh tolerance
+   rendi_faceplate -> rendi_join_ring: min gap +21.500 mm (free)
+   [PASS] no interference, gap >= 1.00 - 0.05 mm mesh tolerance
+
+Faceplate opening just inside the outer rim chamfer: 59.6 x 35.0 mm (spec 60 x 35), centre z=44.5
+   [PASS] opening close to 60 x 35
+Assembled shell: 85.0 x 84.1 x 120.0 mm, flat base dia 48.3 mm
+   [PASS] 120 mm tall, 85 mm max dia
+
+ALL CHECKS PASSED

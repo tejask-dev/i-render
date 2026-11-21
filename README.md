@@ -1,0 +1,68 @@
+# I, Render
+
+Rendi helps a maker turn a robot drawing into a dimensioned 3D model and match the design to candidate parts in a junk drawer. The laptop runs the workbench, vision, geometry and project notebook locally.
+
+[Morning handoff](STATUS.md) · [64-second rehearsal](demo/I-Render-walkthrough.mp4) · [P1S print project](hardware/slicing/Rendi-P1S.3mf)
+
+## Start on Tejass’s Mac
+
+Double-click **Start Demo.command** to open the workshop. The local address is [127.0.0.1:8765](http://127.0.0.1:8765). Keep the Mac plugged in and the server window open during the fair. The launcher serves the notebook in this folder’s `.var/workbench/`. If another server, such as a rehearsal, already holds port 8765, it stops with instructions and leaves that server running.
+
+1. Click **Start a build**. Turn on **Voice** to hear Rendi. Answer the three questions. **On-device dictation** records only after you tap it. Tap again to stop. You can edit the text and confirm the brief.
+2. Choose a sketch file or click **Use camera instead**, frame the drawing and click **Take photo**. The camera switches off after capture. **Build from photo** runs recognition, then generates named 3D solids. Drag to orbit, choose a part to inspect it and download the STL. The interview sets the target size. Depths, joints and hidden surfaces are estimates.
+3. Photograph the drawer the same way, upload a file or count the items by hand. Click **Identify items** to analyze the photo. Review boxes and conditions, then match parts. The percentage counts candidate component units. Inspect the donor and verify compatibility before building.
+4. Click **Save to Rendi’s memory**. The saved address reopens the build. The notebook distinguishes seeded examples from projects actually saved on this Mac.
+
+[Practice drawings and drawer photographs](eval/inputs/) · [Team plan](PLAN.md) · [Three-minute demo](DEMO.md) · [Droplet fabrication](hardware/README.md) · [Devpost draft](SUBMISSION.md)
+
+## Fresh machine
+
+Install Python 3.12, uv, Node.js and npm. From this directory run:
+
+```sh
+uv venv --python 3.12
+uv pip install -r requirements.txt
+npm --prefix frontend ci
+npm --prefix frontend run build
+.venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8765
+```
+
+For local photo recognition, install Ollama and run `ollama serve`, then `ollama pull qwen3-vl:4b-instruct` in another terminal. Reload the workbench once downloaded. The first photo loads the model into memory. Subsequent identical inputs may use a labelled saved recognition. Every new shape still goes through the geometry builder.
+
+The optional Gemini adapter uses server environment variables `GEMINI_API_KEY` and `GEMINI_MODEL`. When configured, the upload form identifies Gemini before sending an image. Missing vision leaves the example and manual paths available. This build’s verified vision path is the local model. Playback uses browser speech synthesis. On this Mac, a 12-second push-to-talk answer uses ffmpeg and Whisper base.en, and the button reads **On-device dictation**. Without local Whisper, the button reads **Dictate answer** and uses the browser’s speech service. That route and Gemini can send audio or images off the Mac. Both are optional and labelled before use. Typing always works.
+
+SQLite stores briefs, plans, recognition results and saved projects under `.var/workbench/`. Normalized donor photos and generated files are stored there too. Set `RENDI_STATE_DIR` before starting to rehearse with a separate notebook. `/api/config` reports `demo_store: true` only when the server is using this folder’s `.var/workbench/`. Keep this local directory and environment keys private.
+
+## Verification
+
+`python -m backend.check_cad` checks the CAD solids with the project environment active. `python -m backend.salvage` checks the component counts. The end-to-end check writes an Eval Rover into the notebook it runs against, so it defaults to a rehearsal server on port 8768 and exits before writing if the server reports `demo_store: true`. Start the rehearsal server in one terminal:
+
+```sh
+RENDI_STATE_DIR="$(mktemp -d)" .venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8768
+```
+
+Run the check in another:
+
+```sh
+.venv/bin/python eval/eval.py --photos
+```
+
+`--photos` sends the included drawings and reference photos through the configured vision provider. Omit it to check only examples, matching and the notebook.
+
+## Portable Snack Scout backup
+
+[demo/Snack-Scout-backup.zip](demo/Snack-Scout-backup.zip) is a curated copy of the notebook. It holds `rendi.sqlite3`, `models/` and `photos/` for the Snack Scout reference build and the two seeded examples. Restore it into a new empty directory and serve it on its own port. The notebook in `.var/workbench/` is not touched.
+
+```sh
+restore="$(mktemp -d)"
+unzip demo/Snack-Scout-backup.zip -d "$restore"
+RENDI_STATE_DIR="$restore" .venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8769
+```
+
+Then open [127.0.0.1:8769/project/p_d58d57f4214745ed951e4e9fef7d49b0](http://127.0.0.1:8769/project/p_d58d57f4214745ed951e4e9fef7d49b0).
+
+See the [project license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) for software, fonts and image credits.
+
+## Credits
+
+Zlata prepared the product, feature and team specifications. Brian planned voice and the physical companion and investigated printing. Tejass coordinated the software work. Codex and Claude Fable generated and reviewed implementation and rehearsal materials under Tejass’s direction. The hero and starter artwork are illustrations. Credits for the reference photos are beside the inputs. General judging, AI attribution and sponsor requirements are covered in the [event guide](event-guide.md).

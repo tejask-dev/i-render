@@ -1,0 +1,11 @@
+{
+  "drive": {"dc_motor": 2, "wheel": 2, "motor_driver": 1, "battery_pack": 1},
+  "walk": {"servo": 4, "microcontroller": 1, "battery_pack": 1},
+  "light_up": {"led": 2, "resistor_220": 2},
+  "make_sound": {"speaker": 1, "audio_amp": 1},
+  "grab": {"servo": 2, "microcontroller": 1},
+  "spin": {"dc_motor": 1},
+  "sense_distance": {"ultrasonic_sensor": 1, "microcontroller": 1},
+  "display_face": {"small_display": 1, "microcontroller": 1},
+  "fly_ish": {"fan": 2, "battery_pack": 1}
+}
