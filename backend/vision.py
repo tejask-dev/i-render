@@ -220,11 +220,11 @@ async def analyze_junk(image: bytes, *, source=None, model=None, prompt=None) ->
     source = source or await vision_source()
     conditions = ["no_visible_damage", "corroded", "swollen", "leaking", "exposed_wires", "missing_parts", "broken", "uncertain"]
     fields = {"label": {"type": "string", "enum": [*KEYS, "other"]}, "raw_name": {"type": "string"},
-              "box_2d": BOX_SCHEMA, "confidence": {"type": "number"}, "condition": {"type": "string", "enum": conditions}}
+              "box_2d": BOX_SCHEMA, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "condition": {"type": "string", "enum": conditions}}
     vocabulary = ", ".join([*KEYS, "other"])
     order = "left,top,right,bottom" if source == "local" else "top,left,bottom,right"
     context = (f"Allowed labels: {vocabulary}. Return label, raw_name, box_2d ([{order}], 0–1000), "
-               "confidence and condition. Condition must be one of: " + ", ".join(conditions))
+               "confidence from 0 to 1 and condition. Condition must be one of: " + ", ".join(conditions))
     raw = await _generate(source, image, prompt or (PROMPTS / "junk_to_inventory.md").read_text(),
                           context, _objects_schema("items", fields, 15), model=model)
     if not isinstance(raw, dict) or not isinstance(raw.get("items"), list) or len(raw["items"]) > 15:
