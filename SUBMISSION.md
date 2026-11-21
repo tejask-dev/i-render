@@ -28,7 +28,7 @@ One drawing made it all the way to a selectable model, a downloadable STL and a 
 
 ## Credits
 
-Zlata prepared the product and feature specifications. Brian planned the physical companion and voice setup and investigated printing. Tejass coordinated the software build. Codex and Claude Fable assisted with implementation, debugging, design and review. OpenAI image generation supplied the workshop and starter illustrations. The recording uses an original test drawing, a CC0 RC car photo by Editor abcdef and a public-domain flashlight photo by Evan-Amos. [RC car photograph](https://commons.wikimedia.org/wiki/File:Radio_controlled_car_on_ground.JPG) · [Flashlight photograph](https://commons.wikimedia.org/wiki/File:Led-flashlight.jpg)
+Zlata prepared the product and feature specifications. Brian planned the voice setup, supplied six STL files for Rendi’s four-pin enclosure and started the enclosure print. Tejass coordinated the software build. Codex and Claude Fable assisted with implementation, debugging, design and review. OpenAI image generation supplied the workshop and starter illustrations. The recording uses an original test drawing, a CC0 RC car photo by Editor abcdef and a public-domain flashlight photo by Evan-Amos. [RC car photograph](https://commons.wikimedia.org/wiki/File:Radio_controlled_car_on_ground.JPG) · [Flashlight photograph](https://commons.wikimedia.org/wiki/File:Led-flashlight.jpg)
 
 ## Zlata’s submission checks
 
