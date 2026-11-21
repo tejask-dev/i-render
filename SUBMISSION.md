@@ -33,6 +33,6 @@ Zlata prepared the product and feature specifications. Brian planned the physica
 ## Zlata’s submission checks
 
 - [ ] Confirm the final roster, each person’s contributions and any on-site test results with Brian and Tejass.
-- [ ] Review the 64-second recording. It is an automated run of the real interface, uses fresh on-device recognition with shortened waits and shows a saved, planned build. Use the actual uploaded video URL if adding it to Devpost. [Local walkthrough](demo/I-Render-walkthrough.mp4)
+- [ ] Review the 79-second recording. It is an automated run of the real interface, uses fresh on-device recognition with shortened waits and shows a saved, planned build. Use the actual uploaded video URL if adding it to Devpost. [Local walkthrough](demo/I-Render-walkthrough.mp4)
 - [ ] Use the working demo for overall judging. Consider Most Adventurous for helping people discover a use for old hardware. Select a sponsor track only after the team can demonstrate its actual requirements. Match the final roster and track selections on the live site and Devpost. [Prize descriptions](https://hack-western-13.devpost.com/#prizes)
 - [ ] Finish the Devpost entry and stop coding by **Sunday, November 22, 2026 at 9:00 a.m. Toronto time**. Check that the submission is final and retain its confirmation. [Organizer rules](https://hack-western-13.devpost.com/rules) · [Live portal](https://www.hackwestern.com/live)

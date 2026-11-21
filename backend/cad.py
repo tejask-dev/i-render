@@ -450,16 +450,20 @@ def _as_trimesh(solid: Manifold) -> trimesh.Trimesh:
                            faces=np.asarray(data.tri_verts, dtype=np.int64), process=False)
 
 
-def _stl_bytes(solids: list[Manifold]) -> bytes:
+def _stl_bytes(solids: list[Manifold]) -> tuple[bytes, str | None]:
+    note = None
     try:
         union = Manifold.batch_boolean(solids, OpType.Add)
-        if union.is_empty() or not math.isfinite(union.volume()):
+        if union.is_empty() or not math.isfinite(union.volume()) or union.volume() <= 0:
             raise CadError("empty union")
         mesh = _as_trimesh(union)
+        bodies = sum(piece.volume() > 0 for piece in union.decompose())
+        if bodies > 1:
+            note = f"The STL has {bodies} separate solid pieces. Preview their placement and supports in your slicer."
     except Exception:
-        # A compound of the separate solids still slices and prints.
         mesh = trimesh.util.concatenate([_as_trimesh(s) for s in solids])
-    return mesh.export(file_type="stl")
+        note = "The solids could not be joined. The STL contains separate shells that may overlap. Inspect and repair it in your slicer before printing."
+    return mesh.export(file_type="stl"), note
 
 
 def _write_atomic(path: Path, data: bytes) -> None:
@@ -477,7 +481,9 @@ def export_model(spec: RobotSpec, size_cm: int, out_dir: Path) -> dict:
     normalized = normalize_spec(spec, size_cm)
     solids = [_part_solid(part.model_dump()) for part in normalized.parts]
     glb = _glb_bytes(normalized.parts, solids)
-    stl = _stl_bytes(solids)
+    stl, print_note = _stl_bytes(solids)
+    if print_note and not any(print_note in existing for existing in normalized.assumptions):
+        normalized.assumptions = _add_notes(normalized.assumptions, [print_note])
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_atomic(out_dir / "model.glb", glb)

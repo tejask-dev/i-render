@@ -2,7 +2,7 @@
 
 Rendi helps a maker turn a robot drawing into a dimensioned 3D model and match the design to candidate parts in a junk drawer. The laptop runs the workbench, vision, geometry and project notebook locally.
 
-[Morning handoff](STATUS.md) · [64-second rehearsal](demo/I-Render-walkthrough.mp4) · [P1S print project](hardware/slicing/Rendi-P1S.3mf)
+[Team handoff](STATUS.md) · [79-second rehearsal](demo/I-Render-walkthrough.mp4) · [31-minute wheel fit check](hardware/slicing/Sketch-wheel-fit-P1S.3mf) · [Rendi enclosure](hardware/slicing/Rendi-P1S.3mf)
 
 ## Start on Tejass’s Mac
 
@@ -10,14 +10,14 @@ Double-click **Start Demo.command** to open the workshop. The local address is [
 
 1. Click **Start a build**. Turn on **Voice** to hear Rendi. Answer the three questions. **On-device dictation** records only after you tap it. Tap again to stop. You can edit the text and confirm the brief.
 2. Choose a sketch file or click **Use camera instead**, frame the drawing and click **Take photo**. The camera switches off after capture. **Build from photo** runs recognition, then generates named 3D solids. Drag to orbit, choose a part to inspect it and download the STL. The interview sets the target size. Depths, joints and hidden surfaces are estimates.
-3. Photograph the drawer the same way, upload a file or count the items by hand. Click **Identify items** to analyze the photo. Review boxes and conditions, then match parts. The percentage counts candidate component units. Inspect the donor and verify compatibility before building.
+3. Photograph the drawer the same way, upload a file or count the items by hand. Click **Identify items** to analyze the photo. Review boxes and conditions. Exclude mistaken detections, then match parts. Select a wheel to highlight its donor and the exact bill row. The percentage counts candidate component units. Inspect the donor and verify compatibility before building.
 4. Click **Save to Rendi’s memory**. The saved address reopens the build. The notebook distinguishes seeded examples from projects actually saved on this Mac.
 
 [Practice drawings and drawer photographs](eval/inputs/) · [Team plan](PLAN.md) · [Three-minute demo](DEMO.md) · [Droplet fabrication](hardware/README.md) · [Devpost draft](SUBMISSION.md)
 
 ## Fresh machine
 
-Install Python 3.12, uv, Node.js and npm. From this directory run:
+On a Mac with uv and Node.js 22.12 or later, double-click **Start Demo.command**. The first launch installs the pinned dependencies and unpacks the curated Snack Scout notebook if the notebook directory is absent. Later launches preserve existing projects. For a manual installation, use Python 3.12, uv, Node.js 22.12 or later and npm. From this directory run:
 
 ```sh
 uv venv --python 3.12
@@ -29,9 +29,9 @@ npm --prefix frontend run build
 
 For local photo recognition, install Ollama and run `ollama serve`, then `ollama pull qwen3-vl:4b-instruct` in another terminal. Reload the workbench once downloaded. The first photo loads the model into memory. Subsequent identical inputs may use a labelled saved recognition. Every new shape still goes through the geometry builder.
 
-The optional Gemini adapter uses server environment variables `GEMINI_API_KEY` and `GEMINI_MODEL`. When configured, the upload form identifies Gemini before sending an image. Missing vision leaves the example and manual paths available. This build’s verified vision path is the local model. Playback uses browser speech synthesis. On this Mac, a 12-second push-to-talk answer uses ffmpeg and Whisper base.en, and the button reads **On-device dictation**. Without local Whisper, the button reads **Dictate answer** and uses the browser’s speech service. That route and Gemini can send audio or images off the Mac. Both are optional and labelled before use. Typing always works.
+The optional Gemini adapter uses server environment variables `GEMINI_API_KEY` and `GEMINI_MODEL`. Each photo starts with on-device recognition selected. Choosing Gemini for that photo sends it and the relevant prompt to Google. The server lists available models before the request. A failed cloud request can be retried on the Mac with the same file. Missing vision leaves the example and manual paths available. This build’s verified vision path is the local model. Playback uses browser speech synthesis. On this Mac, a 12-second push-to-talk answer uses ffmpeg and Whisper base.en, and the button reads **On-device dictation**. Without local Whisper, the button reads **Dictate answer** and uses the browser’s speech service. That route and Gemini can send audio or images off the Mac. Both are optional and labelled before use. Typing always works.
 
-SQLite stores briefs, plans, recognition results and saved projects under `.var/workbench/`. Normalized donor photos and generated files are stored there too. Set `RENDI_STATE_DIR` before starting to rehearse with a separate notebook. `/api/config` reports `demo_store: true` only when the server is using this folder’s `.var/workbench/`. Keep this local directory and environment keys private.
+SQLite stores briefs, plans, recognition results and saved projects under `.var/workbench/`. Normalized sketch and donor photos and generated files are stored there too. Set `RENDI_STATE_DIR` before starting to rehearse with a separate notebook. `/api/config` reports `demo_store: true` only when the server is using this folder’s `.var/workbench/`. Keep this local directory and environment keys private.
 
 ## Verification
 
@@ -47,7 +47,7 @@ Run the check in another:
 .venv/bin/python eval/eval.py --photos
 ```
 
-`--photos` sends the included drawings and reference photos through the configured vision provider. Omit it to check only examples, matching and the notebook.
+`--photos` sends the included drawings and reference photos through local vision. Omit it to check only examples, matching and the notebook.
 
 ## Portable Snack Scout backup
 

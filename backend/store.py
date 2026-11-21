@@ -161,17 +161,15 @@ RECOGNITION_REVISION = hashlib.sha256(
             "backend/vision.py",
             "backend/cad.py",
             "backend/salvage.py",
-            "prompts/sketch_to_spec.md",
-            "prompts/junk_to_inventory.md",
             "data/salvage_map.json",
         )
     )
 ).hexdigest()
 
 
-def recognition_key(kind, image, brief, provider, model):
+def recognition_key(kind, image, brief, provider, model, prompt):
     config = json.dumps(
-        [RECOGNITION_REVISION, kind, provider, model, brief], sort_keys=True
+        [RECOGNITION_REVISION, kind, provider, model, brief, prompt], sort_keys=True
     ).encode()
     return hashlib.sha256(config + b"\x00" + image).hexdigest()
 
@@ -181,12 +179,15 @@ def recognition(key):
         row = db.execute(
             "SELECT result FROM recognition WHERE key=?", (key,)
         ).fetchone()
-    return json.loads(row[0]) if row else None
+    try:
+        return json.loads(row[0]) if row else None
+    except (TypeError, ValueError):
+        return None
 
 
 def remember_recognition(key, result):
     with closing(connect()) as db, db:
         db.execute(
-            "INSERT OR IGNORE INTO recognition VALUES (?,?)",
+            "INSERT OR REPLACE INTO recognition VALUES (?,?)",
             (key, json.dumps(result, allow_nan=False)),
         )

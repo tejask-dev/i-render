@@ -1,5 +1,7 @@
 # Three minutes with Rendi
 
+**Invite the judge to choose a wheel.** “This is the robot we sketched. Which wheel should we trace back to the drawer?” Select their wheel and follow its numbered donor link.
+
 **Bring** a legible front-view robot drawing, a small toy car, a flashlight, the laptop and its charger. Use one fresh sketch and one constrained drawer shot. Avoid telling judges a spare part works until someone inspects the actual donor.
 
 | Clock | Person | Action and words |
@@ -7,7 +9,7 @@
 | 0:00–0:18 | Zlata | Put the sketch beside the objects. “I can draw the robot I want. What I don’t know is what I can build from these two things.” Introduce Rendi. |
 | 0:18–0:45 | Brian | Turn on voice. Give Rendi the desk size, two personality words and the job. Confirm the brief. Let the judge choose one of these answers. |
 | 0:45–1:35 | Tejass | Click **Use camera instead** and hold up the sketch, or upload its photo. Start recognition. While it runs, show the paper and explain that vision identifies front-view parts. Geometry code sizes real solids in millimetres. Rotate the result and click a wheel, head or arm. |
-| 1:35–2:25 | Brian | Photograph the drawer or upload the prepared shot. Show one bounding box, a donor component and the quantity still needed. “The car can contribute wheels. We still need a compatible driver.” Use the actual values on screen. |
+| 1:35–2:25 | Brian | Photograph the drawer or upload the prepared shot. Select a wheel on the result. Point to the highlighted car in the drawer photo, its matching bill row and the remaining motor on the sourcing list. “The car can contribute wheels. We still need a compatible driver.” Use the actual values on screen. |
 | 2:25–2:50 | Zlata | Download the STL. Save the plan, open the notebook and retrieve it. Explain that saved plans carry a “planned” outcome until someone actually builds them. |
 | 2:50–3:00 | Zlata | “From one drawing, we have a model we can inspect and a parts list we can check against the drawer.” Stop and take questions. |
 

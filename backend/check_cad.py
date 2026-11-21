@@ -239,7 +239,7 @@ def check_every_primitive(out: Path) -> str:
     parts = [part(f"p{i}", primitive, dims, [i * 70 - 315, 0, extents[2] / 2])
              for i, (primitive, dims, extents) in enumerate(cases)]
     result = export(spec_of(*parts), DEFAULT_SIZE_CM, out / "primitives")
-    assert result["assumptions"] == [], result["assumptions"]
+    assert any("10 separate solid pieces" in note for note in result["assumptions"]), result["assumptions"]
     assert result["parts"][8]["dims_mm"] == [cad.MOTOR_DEFAULT_MM], "motor_mount default"
     meshes = glb_parts(out / "primitives" / "model.glb")
     for i, (primitive, _, extents) in enumerate(cases):
@@ -381,6 +381,8 @@ def check_normalization(out: Path) -> str:
                    part("b", "box", [10, 20, 30], [40, 0, 10], rot_deg=[90, 0, 90]),
                    part("c", "cone", [30, 6, 60], [-60, 0, 30], rot_deg=[35, 20, 10]))
     result = export(spun, DEFAULT_SIZE_CM, out / "rot")
+    count = bodies(trimesh.load(out / "rot" / "model.stl", force="mesh"))
+    assert count == 3 and any(f"{count} separate solid pieces" in note for note in result["assumptions"])
     meshes = glb_parts(out / "rot" / "model.glb")
     assert close(meshes["b"].extents, [30, 10, 20], 1e-2), meshes["b"].extents
     for p in result["parts"]:

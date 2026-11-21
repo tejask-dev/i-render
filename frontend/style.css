@@ -1418,3 +1418,44 @@ details li {
 .camera .actions {
   justify-content: center;
 }
+.provider-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.sketch-reference {
+  margin-top: 1rem;
+}
+.sketch-reference img {
+  display: block;
+  max-width: 100%;
+  max-height: 28rem;
+  object-fit: contain;
+  margin: 0.8rem auto 0;
+}
+.exclude-item {
+  margin: 0.35rem 0;
+  font-size: 0.75rem;
+}
+.excluded-box {
+  border-color: #78786f;
+  border-style: dashed;
+}
+.box-over.matched {
+  border: 3px solid #ffcb49;
+  box-shadow: 0 0 0 2px #3c2c08;
+  z-index: 1;
+}
+.box-over.matched b {
+  background: #ffcb49;
+  color: #352508;
+}
+.part-row.matched {
+  border-left: 4px solid #c89019;
+  padding-left: 0.7rem;
+  background: #fbf2d9;
+}
+.results .photo-map {
+  margin: 1rem 0;
+}

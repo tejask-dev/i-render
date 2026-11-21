@@ -31,6 +31,8 @@ const defaults = () => ({
     user_notes: "",
   },
   items: {},
+  providers: { sketch: "local", drawer: "local" },
+  excluded: new Set(),
   hits: [],
   error: "",
   memoryQuery: "",
@@ -58,7 +60,7 @@ const ranks = {
 };
 const voiceCapable = Boolean(window.speechSynthesis);
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let voiceOn = false;
+let voiceOn = voiceCapable;
 const $ = (selector) => app.querySelector(selector);
 const btn = (label, act, cls = "primary", glyph = "arrow-right") =>
   `<button type="button" class="${cls}" data-action="${act}">${esc(label)}${glyph ? icon(glyph) : ""}</button>`;
@@ -230,17 +232,16 @@ function confirmBrief() {
       "",
     )}</dl>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>${s.hits[0].seeded ? "Example memory" : "From your notebook"} · ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)}</p></div></div>` : ""}<button class="primary" type="submit">Confirm brief ${icon("check")}</button></form></div>`;
 }
-function visionInfo() {
-  return config.vision_available
-    ? config.vision_source === "local"
-      ? "On-device vision processes the photo on this Mac. Processing time varies with the image."
-      : "Gemini will process the image you choose."
-    : "Photo recognition is offline. You can continue with an example sketch or manually list drawer items.";
+function availableProviders() {
+  return config.vision_providers || {
+    local: config.vision_source === "local",
+    gemini: config.vision_source === "gemini",
+  };
 }
 const applePhoto = (file) =>
   /image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
 const cameraCapable = () =>
-  Boolean(config.vision_available && navigator.mediaDevices?.getUserMedia);
+  Boolean(Object.values(availableProviders()).some(Boolean) && navigator.mediaDevices?.getUserMedia);
 function cameraTools(kind) {
   if (!cameraCapable()) return "";
   return `<button type="button" class="quiet camera-open" data-action="camera" data-kind="${kind}">${icon("focus")} <span>Use camera instead</span></button><div class="camera" id="camera-${kind}" hidden><video playsinline muted aria-label="Live camera preview"></video><small class="camera-status" role="status"></small><div class="actions"><button type="button" class="primary" data-action="camera-take" disabled>Take photo ${icon("check")}</button><button type="button" class="secondary" data-action="camera-cancel">Cancel</button></div></div>`;
@@ -249,7 +250,19 @@ function uploadBox(kind) {
   const sketch = kind === "sketch",
     file = sketch ? s.sketchFile : s.photo,
     preview = sketch ? s.sketchURL : s.photoURL;
-  return `<section class="upload card"><div class="upload-symbol">${icon("upload")}</div><h2>${sketch ? "Use your own sketch" : "Scan your drawer"}</h2><p>${esc(visionInfo())}</p><label class="file-label">Choose ${sketch ? "sketch" : "drawer"} photo<input type="file" id="upload-${kind}" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" ${config.vision_available ? "" : "disabled"}></label>${cameraTools(kind)}${file ? `<div class="upload-preview">${applePhoto(file) ? icon("box") : `<img src="${esc(preview)}" alt="Selected ${kind} photo">`}<span>${esc(file.name)}</span></div>${btn(sketch ? "Build from photo" : "Identify items", sketch ? "scan-sketch" : "scan-drawer", "primary", "eye")}` : ""}<small>JPG, PNG, WebP or HEIC/HEIF · up to 10 MB</small></section>`;
+  const provider = s.providers[kind],
+    available = availableProviders(),
+    online = Object.values(available).some(Boolean),
+    canScan = Boolean(available[provider]);
+  const choice = online ? `<div class="provider-picker" role="group" aria-label="Process this photo with">${[["local", "On this Mac"], ["gemini", "Gemini"]].map(([value, label]) =>
+    `<button type="button" class="choice" data-provider="${value}" data-kind="${kind}" aria-pressed="${provider === value}" ${available[value] ? "" : "disabled"}>${label}${available[value] ? "" : " · offline"}</button>`
+  ).join("")}</div>` : "";
+  const info = !online ? "Photo recognition is offline. Use an example sketch or enter your drawer items by hand."
+    : provider === "gemini" ? (sketch ? "Send this sketch and your confirmed brief to Google when you choose the button below." : "Send this drawer photo to Google when you choose the button below.")
+    : canScan ? "This photo stays on this Mac." : "On-device recognition is offline. Choose Gemini to send this photo to Google.";
+  const scanLabel = provider === "gemini" ? (sketch ? "Send sketch to Gemini" : "Send drawer photo to Gemini")
+    : sketch ? "Build from photo" : "Identify items";
+  return `<section class="upload card"><div class="upload-symbol">${icon("upload")}</div><h2>${sketch ? "Use your own sketch" : "Scan your drawer"}</h2>${choice}<p>${esc(info)}</p><label class="file-label">Choose ${sketch ? "sketch" : "drawer"} photo<input type="file" id="upload-${kind}" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" ${online ? "" : "disabled"}></label>${cameraTools(kind)}${file ? `<div class="upload-preview">${applePhoto(file) ? icon("box") : `<img src="${esc(preview)}" alt="Selected ${kind} photo">`}<span>${esc(file.name)}</span></div>${canScan ? btn(scanLabel, "scan-" + kind, "primary", "eye") : ""}${s.error && provider === "gemini" && available.local ? btn("Retry on this Mac", "retry-local", "secondary", "") : ""}` : ""}<small>JPG, PNG, WebP or HEIC/HEIF · up to 10 MB</small></section>`;
 }
 function sketches() {
   return `${toolHead("Sketch input", "Show me your sketch.", "Upload a drawing or build from one of these example designs.")}<div class="input-layout">${uploadBox("sketch")}<section class="card pad"><h2>Example sketches</h2><p>${s.example ? esc(examples.find((e) => e.id === s.example).name + " is your starter. Choose it to generate the model or pick another.") : "Each example creates a real model at your chosen size."}</p><div class="starters column">${exampleCards("Build")}</div></section></div>`;
@@ -259,11 +272,21 @@ function modelPanel() {
   const p =
     (s.selectedPart && spec.parts.find((p) => p.id === s.selectedPart)) ||
     spec.parts[0];
-  return `<div class="model-grid"><div class="viewer" id="viewer"><span class="viewer-status">Loading 3D model…</span><button type="button" class="spin-toggle" data-spin hidden>Pause orbit</button><button type="button" class="view-fit" data-fit aria-label="Fit model">${icon("focus")}</button><span class="view-guide">${icon("move-3d")} Drag to orbit · scroll to zoom</span></div><section class="card part-panel"><span class="eyebrow"><i></i>Part inspector</span><h2>${spec.parts.length} parts</h2><div class="part-list" role="group" aria-label="Model parts">${spec.parts.map((part) => `<button type="button" class="choice" aria-pressed="${p?.id === part.id}" data-part="${esc(part.id)}">${esc(part.label)}</button>`).join("")}</div><div id="part-info"></div></section></div>`;
+  return `<div class="model-grid"><div class="viewer" id="viewer"><span class="viewer-status">Loading 3D model…</span><button type="button" class="spin-toggle" data-spin hidden>Pause orbit</button><button type="button" class="view-fit" data-fit aria-label="Fit model">${icon("focus")}</button><span class="view-guide">${icon("move-3d")} Drag to orbit · scroll to zoom</span></div><section class="card part-panel"><span class="eyebrow"><i></i>Part inspector</span><h2>${spec.parts.length} parts</h2><div class="part-list" role="group" aria-label="Model parts">${spec.parts.map((part) => `<button type="button" class="choice" aria-pressed="${p?.id === part.id}" data-part="${esc(part.id)}">${esc(part.label)}</button>`).join("")}</div><div id="part-info" aria-live="polite"></div></section></div>`;
+}
+function sketchReference() {
+  const url = s.model.sketch_url;
+  if (!url) return "";
+  return `<details class="card pad sketch-reference"><summary>Original sketch</summary><img src="${esc(sameOriginURL(url))}" alt="Original drawing used to generate this model" loading="lazy"></details>`;
+}
+function unresolvedNotice() {
+  const unresolved = s.model.unresolved_actions || [];
+  if (!unresolved.length) return "";
+  return `<p class="safety"><strong>Still to design</strong> · ${esc(unresolved.map((name) => actionLabels[name] || pretty(name)).join(", "))}. The plan includes their components. Their positions in the model still need to be designed.</p>`;
 }
 function modelView() {
   const spec = s.model.spec;
-  return `${toolHead(presentedSource(s.model.source), spec.robot_name || s.brief.project_name, "Rotate the model and select a part to inspect its dimensions. ")}${modelPanel()}${Number(spec.confidence) < 0.3 ? '<p class="safety">Low confidence. Check the shapes and dimensions against your sketch before printing.</p>' : ""}<div class="bottom-row"><div class="actions">${btn("Open the drawer", "drawer")}${downloadLink("STL")}${downloadLink("GLB")}</div><details class="assumptions"><summary>Model assumptions (${spec.assumptions.length})</summary><ul>${spec.assumptions.map((a) => `<li>${esc(a)}</li>`).join("") || "<li>No model assumptions recorded.</li>"}</ul></details></div>`;
+  return `${toolHead(presentedSource(s.model.source), spec.robot_name || s.brief.project_name, "Select a part to inspect its estimated dimensions. Measure the physical parts before printing.")}${unresolvedNotice()}${modelPanel()}${sketchReference()}${Number(spec.confidence) < 0.3 ? '<p class="safety">Low confidence. Check the shapes and dimensions against your sketch before printing.</p>' : ""}<div class="bottom-row"><div class="actions">${btn("Open the drawer", "drawer")}${downloadLink("STL")}${downloadLink("GLB")}</div><details class="assumptions"><summary>Model assumptions (${spec.assumptions.length})</summary><ul>${spec.assumptions.map((a) => `<li>${esc(a)}</li>`).join("") || "<li>No model assumptions recorded.</li>"}</ul></details></div>`;
 }
 function downloadLink(kind) {
   const url = s.model[kind === "STL" ? "stl_url" : "glb_url"];
@@ -299,24 +322,26 @@ function selectPart(id) {
   const functions = spec.functions
     .filter((f) => f.parts.includes(id))
     .map((f) => f.name);
-  const reqs = {
-    drive: ["wheel", "dc_motor", "motor_driver", "battery_pack"],
-    walk: ["servo", "microcontroller", "battery_pack"],
-    light_up: ["led", "resistor_220"],
-    make_sound: ["speaker", "audio_amp"],
-    grab: ["servo", "microcontroller"],
-    spin: ["dc_motor"],
-    sense_distance: ["ultrasonic_sensor", "microcontroller"],
-    display_face: ["small_display", "microcontroller"],
-    fly_ish: ["fan", "battery_pack"],
-  };
-  const needs = new Set(functions.flatMap((f) => reqs[f] || [])),
-    candidates = (s.plan?.plan?.from_your_drawer || []).filter((x) =>
-      needs.has(x.need),
-    );
+  const plan = s.plan?.plan;
+  const allocations = (plan?.allocations || []).filter((unit) => unit.part_id === id);
+  const donors = allocations.filter((unit) => unit.status === "drawer");
+  const unfilled = allocations.filter((unit) => unit.status === "source");
+  for (const box of app.querySelectorAll("[data-box-index]"))
+    box.classList.toggle("matched", donors.some((unit) => unit.item_index === Number(box.dataset.boxIndex)));
+  for (const row of app.querySelectorAll("[data-donor-row]"))
+    row.classList.toggle("matched", plan.from_your_drawer[Number(row.dataset.donorRow)].part_ids?.includes(id) || false);
+  for (const row of app.querySelectorAll("[data-source-row]"))
+    row.classList.toggle("matched", plan.to_source[Number(row.dataset.sourceRow)].part_ids?.includes(id) || false);
+
   const info = $("#part-info");
-  if (info)
-    info.innerHTML = `<h3>${esc(part.label)}</h3><p>${esc(pretty(part.category))} · ${esc(pretty(part.primitive))}</p><dl><dt>Dimensions</dt><dd>${esc(dims)}</dd><dt>Function</dt><dd>${esc(part.function || functions.map(pretty).join(", ") || "Structure")}</dd></dl>${candidates.length ? `<p><b>Drawer candidates for this function</b><br>${candidates.map((r) => esc(pretty(r.need) + " from " + r.source)).join(", ")}</p>` : ""}`;
+  if (info) {
+    const matched = donors.map((unit) =>
+      `<p><strong>${esc(pretty(unit.need))}</strong> · <a href="#drawer-matches">${esc("Item " + (unit.item_index + 1) + " · " + unit.raw_name)}</a></p>`
+    ).join("");
+    const missing = unfilled.map((unit) => `<p>Still to source · ${esc(pretty(unit.need))}</p>`).join("");
+    const status = plan?.allocations ? (matched + missing || "<p>No drawer component is assigned to this model part.</p>") : "";
+    info.innerHTML = `<h3>${esc(part.label)}</h3><p>${esc(pretty(part.category))} · ${esc(pretty(part.primitive))}</p><dl><dt>Model dimensions</dt><dd>${esc(dims)}</dd><dt>Function</dt><dd>${esc(part.function || functions.map(pretty).join(", ") || "Structure")}</dd></dl>${status}`;
+  }
   viewer?.select(id);
 }
 function drawer() {
@@ -350,13 +375,17 @@ function annotation() {
       if (item.box_2d?.length !== 4) return "";
       const clamp = (v) => Math.max(0, Math.min(1000, Number(v) || 0)) / 10;
       const [y, x, Y, X] = item.box_2d.map(clamp);
-      return `<span class="box-over" style="left:${x}%;top:${y}%;width:${Math.max(0, X - x)}%;height:${Math.max(0, Y - y)}%"><b>${i + 1}</b></span>`;
+      return `<span class="box-over${s.excluded.has(i) || item.user_excluded ? " excluded-box" : ""}" data-box-index="${i}" style="left:${x}%;top:${y}%;width:${Math.max(0, X - x)}%;height:${Math.max(0, Y - y)}%"><b>${i + 1}</b></span>`;
     })
     .join("")}</div>`;
 }
 function inventory() {
   const items = s.inv.inventory.items;
-  return `${toolHead(presentedSource(s.inv.source), "Your drawer inventory", items.length ? "Check the identified items before matching them to the design." : "Your drawer is suspiciously clean. Respect. We’ll list what you need to source.")}<div class="inventory-review">${annotation()}<section class="card pad"><h2>${items.length} ${items.length === 1 ? "item" : "items"}</h2><ol class="detected">${items.map((item) => `<li><strong>${esc(item.raw_name || pretty(item.label))}</strong> ${heldOut(item) ? '<span class="danger">Do not open or salvage</span>' : ""}<small>${esc(item.condition_note || (item.label === "other" ? "Contents unknown" : "Recorded in inventory"))}</small></li>`).join("")}</ol><div class="actions">${btn("Match my parts", "match")}${btn("Change inventory", "drawer", "secondary", "")}</div></section></div>`;
+  const row = (item, i) => {
+    const name = item.raw_name || pretty(item.label), excluded = s.excluded.has(i);
+    return `<li><strong>${esc(name)}</strong> ${heldOut(item) ? '<span class="danger">Do not open or salvage</span>' : ""}<small>${esc(item.condition_note || (item.label === "other" ? "Contents unknown" : "Recorded in inventory"))}</small>${heldOut(item) ? "" : `<button type="button" class="choice exclude-item" data-exclude="${i}" aria-label="${esc((excluded ? "Restore " : "Exclude ") + name)}">${excluded ? "Restore item" : "Exclude item"}</button>`}</li>`;
+  };
+  return `${toolHead(presentedSource(s.inv.source), "Your drawer inventory", items.length ? "Exclude anything you don’t recognize before matching parts." : "Your drawer is empty. We’ll list the components to source.")}<div class="inventory-review">${annotation()}<section class="card pad"><h2>${items.length} ${items.length === 1 ? "item" : "items"}</h2><ol class="detected">${items.map(row).join("")}</ol><div class="actions">${btn("Match my parts", "match")}${btn("Change inventory", "drawer", "secondary", "")}</div></section></div>`;
 }
 function briefDetails() {
   const b = s.brief;
@@ -370,7 +399,7 @@ function result() {
       new Set([
         ...(p.safety_notes || []),
         ...(s.inv?.inventory?.items || [])
-          .filter(heldOut)
+          .filter((item) => heldOut(item) && !item.user_excluded)
           .map(
             (it) =>
               "Leave " +
@@ -379,7 +408,30 @@ function result() {
           ),
       ]),
     );
-  return `${toolHead("Build plan", s.brief.project_name, "Model · " + presentedSource(s.model.source) + "  /  Drawer · " + presentedSource(s.inv?.source))}<div class="score"><strong>${esc(p.drawer_score)}<small>%</small></strong><div><h2>of required parts have drawer candidates.</h2><span>Potential matches by quantity. Verify each part’s fit and ratings before use.</span></div></div>${modelPanel()}<div class="results"><section class="card pad"><span class="eyebrow"><i></i>Salvage</span><h2>From your drawer</h2>${got.map((r) => `<details class="part-row"><summary><b>${esc(pretty(r.need))} ×${esc(r.qty)}</b><span>${esc(pretty(r.source))}</span></summary><p>${esc(r.how)}</p>${r.tools?.length ? `<small>Tools · ${esc(r.tools.join(", "))}</small>` : ""}${r.substitution ? `<p>Substitution · ${esc(r.substitution)}</p>` : ""}</details>`).join("") || "<p>No matching parts found.</p>"}</section><section class="card pad"><span class="eyebrow"><i></i>Parts list</span><h2>Still to source</h2>${missing.map((r) => `<div class="part-row"><b>${esc(pretty(r.need))} ×${esc(r.qty)}</b><p>${esc(r.suggestion)}</p></div>`).join("") || "<p>Your drawer covers every required part.</p>"}</section></div>${warnings.length ? `<aside class="safety">${icon("triangle-alert")}<div><strong>Safety notes</strong><ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div></aside>` : ""}<div class="results"><section class="card pad"><h2>Build steps</h2><ol class="build-steps">${p.steps.map((a) => `<li>${esc(typeof a === "string" ? a : [a.title, a.detail].filter(Boolean).join(" — "))}</li>`).join("")}</ol></section><div class="stack">${briefDetails()}${p.memory_notes.length ? `<section class="card pad"><h2>Rendi remembers</h2>${p.memory_notes.map((a) => `<p>${esc(a)}</p>`).join("")}</section>` : ""}${s.inv?.source !== "manual" && annotation() ? `<details class="card pad"><summary>Annotated drawer photo</summary>${annotation()}</details>` : ""}</div></div><div class="actions end-actions">${s.projectId ? '<span class="saved">' + icon("check") + " Saved to Rendi’s memory</span>" : btn("Save to Rendi’s memory", "save", "primary", "save")}${downloadLink("STL")}${downloadLink("GLB")}${btn("Start a new idea", "new", "text-btn", "arrow-right")}</div>`;
+  const candidateCount = got.reduce((sum, row) => sum + row.qty, 0);
+  const requiredCount = candidateCount + missing.reduce((sum, row) => sum + row.qty, 0);
+  const allocationContext = (row) => {
+    const places = (row.part_ids || []).map((id) => s.model.spec.parts.find((part) => part.id === id)?.label).filter(Boolean);
+    if (places.length) return `<small>Model · ${esc(places.join(", "))}</small>`;
+    if (row.functions?.length) return `<small>For ${esc(row.functions.map((name) => actionLabels[name] || pretty(name)).join(", "))} · mount unspecified</small>`;
+    return "";
+  };
+  const donorRows = got.map((row, i) => {
+    const item = s.inv.inventory.items[row.item_index];
+    const name = item?.raw_name || pretty(row.source);
+    const donor = Number.isInteger(row.item_index) ? `Item ${row.item_index + 1} · ${name}` : name;
+    return `<details class="part-row" data-donor-row="${i}"><summary><b>${esc(pretty(row.need))} ×${esc(row.qty)}</b><span>${esc(donor)}</span></summary>${allocationContext(row)}<p>${esc(row.how)}</p>${row.tools?.length ? `<small>Tools · ${esc(row.tools.join(", "))}</small>` : ""}${row.substitution ? `<p>Substitution · ${esc(row.substitution)}</p>` : ""}</details>`;
+  }).join("");
+  const excludedNames = s.inv.inventory.items.filter((item, i) => s.excluded.has(i) || item.user_excluded)
+    .map((item) => item.raw_name || pretty(item.label));
+  const photo = annotation();
+  const drawerPanel = `<section class="card pad" id="drawer-matches"><span class="eyebrow"><i></i>Salvage</span><h2>From your drawer</h2>${photo}${donorRows || "<p>No matching parts found.</p>"}${excludedNames.length ? `<p><small>Left out of the match · ${esc(excludedNames.join(", "))}</small></p>` : ""}</section>`;
+  const sourcePanel = `<section class="card pad"><span class="eyebrow"><i></i>Parts list</span><h2>Still to source</h2>${missing.map((r, i) => `<div class="part-row" data-source-row="${i}"><b>${esc(pretty(r.need))} ×${esc(r.qty)}</b><p>${esc(r.suggestion)}</p>${allocationContext(r)}</div>`).join("") || (requiredCount ? "<p>Your drawer has candidates for every required component.</p>" : "<p>No component requirements have been mapped.</p>")}</section>`;
+  const score = `<div class="score"><strong>${esc(p.drawer_score)}<small>%</small></strong><div><h2>${candidateCount} of ${requiredCount} required components have drawer candidates.</h2><span>Check their fit and electrical ratings before use.</span></div></div>`;
+  const notes = warnings.length ? `<aside class="safety">${icon("triangle-alert")}<div><strong>Safety notes</strong><ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div></aside>` : "";
+  const steps = `<section class="card pad"><h2>Build steps</h2><ol class="build-steps">${p.steps.map((a) => `<li>${esc(typeof a === "string" ? a : [a.title, a.detail].filter(Boolean).join(" — "))}</li>`).join("")}</ol></section>`;
+  const memory = p.memory_notes?.length ? `<section class="card pad"><h2>Rendi remembers</h2>${p.memory_notes.map((a) => `<p>${esc(a)}</p>`).join("")}</section>` : "";
+  return `${toolHead("Build plan", s.brief.project_name, "Model · " + presentedSource(s.model.source) + "  /  Drawer · " + presentedSource(s.inv?.source))}${unresolvedNotice()}${score}${modelPanel()}<div class="results">${drawerPanel}${sourcePanel}</div>${notes}<div class="results">${steps}<div class="stack">${sketchReference()}${briefDetails()}${memory}</div></div><div class="actions end-actions">${s.projectId ? '<span class="saved">' + icon("check") + " Saved to Rendi’s memory</span>" : btn("Save to Rendi’s memory", "save", "primary", "save")}${downloadLink("STL")}${downloadLink("GLB")}${btn("Start a new idea", "new", "text-btn", "arrow-right")}</div>`;
 }
 function notebook() {
   const index = savedIndex();
@@ -464,7 +516,7 @@ async function runSketch(template) {
     async () => {
       s.model = await multipart("/sketch", {
         brief_id: s.brief_id,
-        ...(template ? { template } : { image: s.sketchFile }),
+        ...(template ? { template } : { image: s.sketchFile, provider: s.providers.sketch }),
       });
       s.selectedPart = null;
       s.inv = null;
@@ -485,15 +537,29 @@ async function loadProject(id) {
       source: project.source,
       glb_url: project.glb_url,
       stl_url: project.stl_url,
+      sketch_url: project.sketch_url,
+      unresolved_actions: project.unresolved_actions,
     };
     s.inv = {
       inventory: project.inventory || { items: [] },
       source: project.inventory_source,
       photo_url: project.inventory_photo_url,
     };
+    s.excluded = new Set(project.excluded_indices || []);
     s.plan = { plan: project.plan };
     goto("result");
   });
+}
+function spokenCentimeters(phrase) {
+  const numbers = phrase.match(/-?(?:\d*\.\d+|\d+)/g) || [];
+  if (numbers.length !== 1 || /\d\s*,\s*\d/.test(phrase)) return null;
+  const match = phrase.match(/(-?(?:\d*\.\d+|\d+))\s*-?\s*(?:(mm|millimet(?:er|re)s?|cm|centimet(?:er|re)s?|in(?:ch|ches)?|ft|foot|feet)\b|(["″'′]))/i);
+  if (!match) return null;
+  const unit = (match[2] || match[3]).toLowerCase();
+  const factor = /^(mm|milli)/.test(unit) ? 0.1
+    : /^(in|["″])/.test(unit) ? 2.54 : /^(f|['′])/.test(unit) ? 30.48 : 1;
+  const cm = Math.round(Number(match[1]) * factor);
+  return cm >= 3 && cm <= 150 ? cm : null;
 }
 function acceptTranscript(phrase) {
   const slot = s.slot;
@@ -516,20 +582,24 @@ function acceptTranscript(phrase) {
               ? "wearable"
               : "";
     capture();
-    if (scale) {
-      s.brief.scale = scale;
-      s.brief.approx_size_cm = scales[scale][1];
-    }
-    const n = phrase.match(/\d+/);
-    if (n) s.brief.approx_size_cm = Math.max(3, Math.min(150, Number(n[0])));
+    const cm = spokenCentimeters(phrase);
+    if (scale) s.brief.scale = scale;
+    if (cm !== null) s.brief.approx_size_cm = cm;
+    else if (scale && !/\d/.test(phrase)) s.brief.approx_size_cm = scales[scale][1];
     render();
-    message("Heard “" + phrase + "”. Check the size before continuing.");
+    message("Heard “" + phrase + "”. " +
+      (cm === null && /\d/.test(phrase)
+        ? "Enter one size in centimeters before continuing."
+        : "Check the size before continuing."));
   }
   if (slot === 1)
     $("#vibe").value = phrase
       .replace(/[.!?]+$/, "")
       .replace(/\s+(and|or)\s+/gi, ", ");
-  if (slot === 2) $("#adventure").value = phrase;
+  if (slot === 2) {
+    $("#adventure").value = phrase;
+    message("Check the adventure and select what the robot should do.");
+  }
 }
 function cancelRecording() {
   const session = recording;
@@ -773,33 +843,39 @@ function takePhoto() {
   const video = session.box.querySelector("video");
   if (!video.videoWidth || !video.videoHeight) return;
   session.capturing = true;
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext("2d").drawImage(video, 0, 0);
-  stopTracks(session.stream);
-  video.pause();
-  session.box.querySelector('[data-action="camera-take"]').disabled = true;
-  session.box.querySelector(".camera-status").textContent = "Saving photo…";
-  canvas.toBlob(
-    (blob) => {
-      if (camera !== session) return;
-      closeCamera();
-      if (!blob) {
-        message("The photo could not be captured. Try again or choose a file.");
-        return;
-      }
-      const file = new File(
-        [blob],
-        session.kind + "-camera-" + Date.now() + ".jpg",
-        { type: "image/jpeg" },
-      );
-      if (acceptFile(session.kind, file))
-        $(`[data-action="scan-${session.kind}"]`)?.focus();
-    },
-    "image/jpeg",
-    0.9,
-  );
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    stopTracks(session.stream);
+    video.pause();
+    session.box.querySelector('[data-action="camera-take"]').disabled = true;
+    session.box.querySelector(".camera-status").textContent = "Saving photo…";
+    canvas.toBlob(
+      (blob) => {
+        if (camera !== session) return;
+        closeCamera();
+        if (!blob) {
+          message("The photo could not be captured. Try again or choose a file.");
+          return;
+        }
+        const file = new File(
+          [blob],
+          session.kind + "-camera-" + Date.now() + ".jpg",
+          { type: "image/jpeg" },
+        );
+        if (acceptFile(session.kind, file))
+          $(`[data-action="scan-${session.kind}"]`)?.focus();
+      },
+      "image/jpeg",
+      0.9,
+    );
+  } catch {
+    closeCamera();
+    session.opener.focus();
+    message("The photo could not be captured. Try again or choose a file.");
+  }
 }
 function spokenInventory() {
   const names = (s.inv?.inventory?.items || []).map(
@@ -851,14 +927,9 @@ app.addEventListener("submit", async (e) => {
     if (s.editing || s.slot === 2) {
       s.editing = false;
       goto("confirm");
-      say(
-        (s.hits.length
-          ? "This reminds me of " +
-            (s.hits[0].seeded ? "the example " : "your saved build ") +
-            s.hits[0].project_name +
-            ". "
-          : "") + "Did I get that right?",
-      );
+      const hit = s.hits[0];
+      const recall = hit ? ", which reminds me of " + (hit.seeded ? "the example " : "your saved build ") + hit.project_name : "";
+      say(`I’m picturing your ${b.vibe.join(", ")} robot at ${b.approx_size_cm} centimeters, ready to ${b.must_do.map((action) => actionLabels[action].toLowerCase()).join(" and ")}${recall}. Did I get that right?`);
     } else {
       s.slot++;
       goto("interview");
@@ -889,6 +960,21 @@ app.addEventListener("click", async (e) => {
   if (!t || t.disabled || s.busy) return;
   if (t.dataset.example) {
     chooseExample(t.dataset.example);
+    return;
+  }
+  if (t.dataset.exclude !== undefined) {
+    const i = Number(t.dataset.exclude);
+    if (s.excluded.has(i)) s.excluded.delete(i);
+    else s.excluded.add(i);
+    render();
+    $(`[data-exclude="${i}"]`)?.focus();
+    return;
+  }
+  if (t.dataset.provider) {
+    s.providers[t.dataset.kind] = t.dataset.provider;
+    s.error = "";
+    render();
+    $('[data-provider="' + t.dataset.provider + '"]')?.focus();
     return;
   }
   if (t.dataset.part) {
@@ -1014,6 +1100,11 @@ app.addEventListener("click", async (e) => {
       goto("interview");
       say(question());
       break;
+    case "retry-local":
+      s.providers[s.stage] = "local";
+      render();
+      $('[data-action="scan-' + s.stage + '"]')?.click();
+      break;
     case "scan-sketch":
       if (s.sketchFile) await runSketch(null);
       break;
@@ -1031,8 +1122,9 @@ app.addEventListener("click", async (e) => {
           );
           s.inv = await multipart(
             "/junk",
-            manual ? { items: JSON.stringify(ids) } : { image: s.photo },
+            manual ? { items: JSON.stringify(ids) } : { image: s.photo, provider: s.providers.drawer },
           );
+          s.excluded.clear();
           goto("inventory");
           if (!manual) say(spokenInventory());
         },
@@ -1045,6 +1137,7 @@ app.addEventListener("click", async (e) => {
           brief_id: s.brief_id,
           spec_id: s.model.spec_id,
           inventory_id: s.inv.inventory_id,
+          excluded_indices: [...s.excluded],
         });
         goto("result");
       });

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import shutil
@@ -85,10 +86,14 @@ class Brief(BaseModel):
     user_notes: str = Field(default="", max_length=600)
 
 
+Provider = Literal["local", "gemini"]
+
+
 class PlanRequest(BaseModel):
     spec_id: Text
     inventory_id: Text
     brief_id: Text
+    excluded_indices: list[Annotated[int, Field(strict=True, ge=0, le=14)]] = Field(default_factory=list, max_length=15)
 
 
 class SaveRequest(BaseModel):
@@ -101,8 +106,10 @@ async def config():
     source = await vision.vision_source()
     return {
         "vision_available": bool(source),
+        "vision_providers": {"local": bool(source), "gemini": bool(os.environ.get("GEMINI_API_KEY", "").strip())},
         "vision_source": source,
         "local_voice_available": speech.available(),
+        "notebook_id": hashlib.sha256(os.fsencode(store.STATE)).hexdigest()[:16],
         "demo_store": store.STATE == (store.ROOT / ".var" / "workbench").resolve(),
         "templates": [
             {"id": k, "label": v["robot_name"]} for k, v in TEMPLATES.items()
@@ -134,31 +141,37 @@ async def jpeg(file):
     return await run_in_threadpool(vision.read_image, content)
 
 
-async def provider():
-    source = await vision.vision_source()
-    if not source:
-        raise HTTPException(
-            503,
-            "Photo recognition is offline. Use an example sketch or choose drawer items manually.",
+def usable_cached_result(kind, result, brief):
+    if kind == "inventory":
+        return isinstance(result, list) and len(result) <= 15 and all(
+            isinstance(item, dict) and isinstance(item.get("label"), str)
+            and isinstance(item.get("raw_name"), str) and vision.valid_box(item.get("box_2d"))
+            and type(item.get("confidence")) in (int, float) and 0 <= item["confidence"] <= 1
+            and isinstance(item.get("blocked"), bool) and isinstance(item.get("candidate_parts"), dict)
+            for item in result
         )
-    return source
+    try:
+        spec = cad.RobotSpec.model_validate(result)
+    except ValidationError:
+        return False
+    names = {f.name for f in spec.functions}
+    return spec.confidence >= 0.3 and names.issuperset(brief.get("must_do", []))
 
 
-async def recognize(kind, data, brief=None):
-    source = await provider()
-    model = (
-        os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
-        if source == "gemini"
-        else vision.LOCAL_MODEL
-    )
-    key = store.recognition_key(kind, data, brief, source, model)
+async def recognize(kind, data, source, brief=None):
+    model = await vision.gemini_model() if source == "gemini" else vision.LOCAL_MODEL
+    prompt_file = vision.sketch_prompt(source) if kind == "sketch" else vision.PROMPTS / "junk_to_inventory.md"
+    prompt = prompt_file.read_text()
+    key = store.recognition_key(kind, data, brief, source, model, prompt)
     cached = store.recognition(key)
-    if cached is not None:
+    if cached is not None and usable_cached_result(kind, cached, brief):
         return "cached_" + source, cached
+    if source == "local" and not await vision.vision_source():
+        raise HTTPException(503, "On-device recognition is offline. Start the local model, use an example sketch or choose drawer items manually.")
     if kind == "sketch":
-        result = await vision.analyze_sketch(data, brief, source=source)
+        result = await vision.analyze_sketch(data, brief, source=source, model=model, prompt=prompt)
     else:
-        result = await vision.analyze_junk(data, source=source)
+        result = await vision.analyze_junk(data, source=source, model=model, prompt=prompt)
     store.remember_recognition(key, result)
     return source, result
 
@@ -167,6 +180,7 @@ async def recognize(kind, data, brief=None):
 async def sketch(
     brief_id: str = Form(default=""),
     template: str = Form(default=""),
+    provider: Provider = Form(default="local"),
     image: Annotated[UploadFile | None, File()] = None,
 ):
     if bool(template) == bool(image):
@@ -182,7 +196,7 @@ async def sketch(
         source, raw = "example", TEMPLATES[template]
     else:
         data = await jpeg(image)
-        source, raw = await recognize("sketch", data, brief)
+        source, raw = await recognize("sketch", data, provider, brief)
     spec_id = store.new_id("s")
     dest = store.FILES / spec_id
     try:
@@ -191,13 +205,18 @@ async def sketch(
         spec = await run_in_threadpool(
             cad.export_model, model, brief["approx_size_cm"], dest
         )
+        spec = vision.with_requested_actions(spec, brief)
         result = {
             "spec_id": spec_id,
+            "unresolved_actions": vision.unresolved_actions(spec, brief),
             "spec": spec,
             "source": source,
             "glb_url": f"/files/{spec_id}/model.glb",
             "stl_url": f"/files/{spec_id}/model.stl",
         }
+        if image:
+            (dest / "sketch.jpg").write_bytes(data)
+            result["sketch_url"] = f"/files/{spec_id}/sketch.jpg"
         store.put("sketch", {**result, "brief_id": brief_id}, spec_id)
         return result
     except (ValidationError, ValueError, RuntimeError) as exc:
@@ -213,13 +232,14 @@ async def sketch(
 @app.post("/api/junk")
 async def drawer(
     items: str | None = Form(default=None),
+    provider: Provider = Form(default="local"),
     image: Annotated[UploadFile | None, File()] = None,
 ):
     if (items is not None) == bool(image):
         raise HTTPException(400, "Choose an image or select drawer items.")
     if image:
         data = await jpeg(image)
-        source, detected = await recognize("inventory", data)
+        source, detected = await recognize("inventory", data, provider)
     else:
         try:
             labels = json.loads(items)
@@ -234,20 +254,36 @@ async def drawer(
             raise HTTPException(422, "Choose at most 15 known drawer items.")
         source = "manual"
     inventory_id = store.new_id("i")
-    inventory = {"items": detected}
-    if image:
-        (store.PHOTOS / (inventory_id + ".jpg")).write_bytes(data)
-        inventory["photo_url"] = f"/drawer-photo/{inventory_id}"
-    result = {"inventory": inventory, "source": source}
-    return {"inventory_id": store.put("inventory", result, inventory_id), **result}
+    inventory = {"items": [salvage.screen_donor(item) for item in detected]}
+    photo_path = store.PHOTOS / (inventory_id + ".jpg")
+    try:
+        if image:
+            photo_path.write_bytes(data)
+            inventory["photo_url"] = f"/drawer-photo/{inventory_id}"
+        result = {"inventory": inventory, "source": source}
+        store.put("inventory", result, inventory_id)
+        return {"inventory_id": inventory_id, **result}
+    except Exception:
+        photo_path.unlink(missing_ok=True)
+        raise
 
 
 @app.get("/drawer-photo/{inventory_id}")
 def drawer_photo(inventory_id: str):
     _, row = store.get("inventory", inventory_id)
-    if "photo_url" not in row["inventory"]:
+    path = store.PHOTOS / (inventory_id + ".jpg")
+    if "photo_url" not in row["inventory"] or not path.is_file():
         raise HTTPException(404)
-    return FileResponse(store.PHOTOS / (inventory_id + ".jpg"), media_type="image/jpeg")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+def reviewed_items(items, excluded_indices):
+    if any(index >= len(items) for index in excluded_indices):
+        raise HTTPException(422, "One of the excluded drawer items is missing. Review this inventory again.")
+    reviewed = [salvage.screen_donor(item) for item in items]
+    for index in excluded_indices:
+        reviewed[index] = {**reviewed[index], "user_excluded": True}
+    return reviewed
 
 
 @app.post("/api/plan")
@@ -257,7 +293,7 @@ def plan(req: PlanRequest):
     _, inventory = store.get("inventory", req.inventory_id)
     if sketch["brief_id"] and sketch["brief_id"] != req.brief_id:
         raise HTTPException(409, "This sketch belongs to a different interview.")
-    spec = sketch["spec"]
+    spec = vision.with_requested_actions(sketch["spec"], brief)
     query = " ".join(
         [
             brief["project_name"],
@@ -267,22 +303,21 @@ def plan(req: PlanRequest):
         ]
     )
     matched = salvage.build_plan(
-        spec, inventory["inventory"]["items"], store.search(query)
+        spec, reviewed_items(inventory["inventory"]["items"], req.excluded_indices), store.search(query)
     )
     payload = {**req.model_dump(), "plan": matched}
     return {"plan_id": store.put("plan", payload), "plan": matched}
 
 
-def reviewed_snapshot(data, sketch):
+def reviewed_snapshot(data, spec):
     _, record = store.get("inventory", data["inventory_id"])
     inventory = record["inventory"]
-    items = [salvage.screen_donor(item) for item in inventory["items"]]
+    items = reviewed_items(inventory["items"], data.get("excluded_indices", []))
     saved_plan = data["plan"]
     if items != inventory["items"]:
-        saved_plan = salvage.build_plan(sketch["spec"], items, [])
-        saved_plan["memory_notes"] = data["plan"].get("memory_notes", [])
+        saved_plan = {**saved_plan, "allocations": None}
         inventory = {**inventory, "items": items}
-    return saved_plan, inventory, record["source"]
+    return salvage.with_allocations(saved_plan, spec, items), inventory, record["source"]
 
 
 @app.post("/api/projects", status_code=201)
@@ -290,7 +325,7 @@ def save(req: SaveRequest):
     _, data = store.get("plan", req.plan_id)
     _, brief = store.get("brief", data["brief_id"])
     _, sketch = store.get("sketch", data["spec_id"])
-    saved_plan, _, _ = reviewed_snapshot(data, sketch)
+    saved_plan, _, _ = reviewed_snapshot(data, vision.with_requested_actions(sketch["spec"], brief))
     parts = [x["need"] for x in saved_plan["from_your_drawer"]]
     note = (
         "Planned with " + ", ".join(x.replace("_", " ") for x in parts) + "."
@@ -319,10 +354,14 @@ def project(project_id: str):
     data = store.project_plan(project_id)
     _, brief = store.get("brief", data["brief_id"])
     _, sketch = store.get("sketch", data["spec_id"])
-    saved_plan, inventory, source = reviewed_snapshot(data, sketch)
+    spec = vision.with_requested_actions(sketch["spec"], brief)
+    saved_plan, inventory, source = reviewed_snapshot(data, spec)
     return {
         **sketch,
         "project_id": project_id,
+        "spec": spec,
+        "unresolved_actions": vision.unresolved_actions(spec, brief),
+        "excluded_indices": data.get("excluded_indices", []),
         "brief": brief,
         "plan": saved_plan,
         "inventory": inventory,
@@ -337,6 +376,12 @@ def memory(q: str = Query("", max_length=600)):
 
 @app.get("/files/{spec_id}/{name}")
 def model_file(spec_id: str, name: str):
+    if name == "sketch.jpg":
+        _, sketch = store.get("sketch", spec_id)
+        path = store.FILES / spec_id / name
+        if not sketch.get("sketch_url") or not path.is_file():
+            raise HTTPException(404, "No original sketch photo was saved.")
+        return FileResponse(path, media_type="image/jpeg")
     if name not in ("model.stl", "model.glb"):
         raise HTTPException(404)
     store.get("sketch", spec_id)

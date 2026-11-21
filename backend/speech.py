@@ -109,7 +109,8 @@ async def transcribe(data):
                 raise HTTPException(
                     504, "Dictation timed out. Tap to retry or type your answer."
                 ) from exc
-            text = wav.with_suffix(".txt").read_text().strip()[:600]
+            transcript = wav.with_suffix(".txt")
+            text = transcript.read_text().strip()[:600] if transcript.is_file() else ""
             if not text:
                 raise HTTPException(
                     422, "No speech was detected. Try again or type your answer."

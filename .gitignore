@@ -4,6 +4,13 @@ __pycache__/
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
+.claude/
+.codex/
+.devpost-hackathon-state.json
+.ruff_cache/
+.DS_Store
 .var/
 *.log
 team-specs/

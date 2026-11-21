@@ -28,12 +28,17 @@ SUGGESTIONS = {
 }
 HAZARDOUS_NAME = re.compile(
     r"microwave|\bcrt\b|cathode.?ray|(?:disposable|single.use|flash) camera|"
-    r"\blithium\b|li[ -]?(?:ion|po)\b|\bswollen\b|\bcorroded\b|\bleaking\b",
+    r"\blithium\b|li[ -]?(?:ion|po)\b|\b(?:swollen|corroded|leaking|burnt|burned|scorched|cracked|damaged|broken)\b",
     re.I,
 )
 POWER_SUPPLY_NAME = re.compile(r"\bpsu\b|\bpower[ _-]*suppl(?:y|ies)\b|\batx[ _-]*supply\b", re.I)
 BLOCK_NOTE = "Excluded from salvage. Leave this item intact."
 SHARED = {"microcontroller", "battery_pack"}
+# Mesh parts built to hold one component. Needs without a host stay function-level electronics.
+HOST_PRIMITIVE = {"wheel": "wheel", "dc_motor": "motor_mount", "servo": "servo_mount"}
+HOST_CATEGORY = {"led": "light", "speaker": "sound", "ultrasonic_sensor": "sensor"}
+NAMES = {"dc_motor": "DC motor", "led": "LED", "resistor_220": "current-limiting resistor",
+         "audio_amp": "audio amplifier", "fly_ish": "airflow display"}
 DETACHED_CHECK = {
     "computer_fan": "Set aside. Add it manually only after verifying it is already loose, intact and labelled for low-voltage DC. Leave power supplies closed.",
     "cd_dvd_drive": "Set aside. Add it manually only after verifying it is already detached, disconnected, intact and labelled for low-voltage DC. Leave the laser and power supply intact.",
@@ -88,45 +93,217 @@ def manual_inventory(keys: list[str]) -> list[dict]:
     return [inventory_item(key, KEYS[key]) for key in keys]
 
 
-def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
-    names = list(dict.fromkeys(f["name"] for f in spec["functions"])) or ["light_up"]
-    needs = Counter()
-    for name in names:
-        for part, qty in REQUIREMENTS[name].items():
-            # Distinct moving functions need distinct actuators. A rated supply/controller may be shared.
-            needs[part] = max(needs[part], qty) if part in SHARED else needs[part] + qty
+def _name(key, qty=None):
+    text = NAMES.get(key, key.replace("_", " "))
+    return text if qty is None else f"{qty} {text}{'s' if qty > 1 else ''}"
 
-    drawer = []
-    remaining = needs.copy()
-    for item_index, stored_item in enumerate(items):
-        item = screen_donor(stored_item)
+
+def _join(words):
+    words = list(words)
+    return ", ".join(words[:-1]) + " and " + words[-1] if len(words) > 1 else "".join(words)
+
+
+def _holds(need, part):
+    return (need in HOST_PRIMITIVE and part.get("primitive") == HOST_PRIMITIVE[need]) or (
+        need in HOST_CATEGORY and part.get("category") == HOST_CATEGORY[need])
+
+
+def required_units(spec: dict) -> list[dict]:
+    """One slot per required unit, joined to the named mesh part that holds it when the model has one."""
+    listed = {}
+    for function in spec["functions"]:
+        listed.setdefault(function["name"], []).extend(function.get("parts") or [])
+    parts = {part["id"]: part for part in spec.get("parts") or []}
+    slots, claimed = [], set()
+
+    def claim(slot, part_id):
+        claimed.add((slot["need"], part_id))
+        slot.update(part_id=part_id, part_label=parts[part_id].get("label") or part_id)
+
+    for name, ids in listed.items():
+        for need, qty in REQUIREMENTS[name].items():
+            if name == "drive" and need == "wheel":
+                qty = max(qty, sum(part.get("primitive") == "wheel" for part in parts.values()))
+            if need in SHARED:
+                # Distinct moving functions need distinct actuators. A rated supply/controller may be shared.
+                shared = [slot for slot in slots if slot["need"] == need][:qty]
+                for slot in shared:
+                    slot["functions"].append(name)
+                qty -= len(shared)
+            for _ in range(qty):
+                slot = {"unit": None, "need": need, "functions": [name], "part_id": None, "part_label": None,
+                        "status": "source", "item_index": None, "item_id": None, "raw_name": None,
+                        "source": None, "box_2d": None}
+                slots.append(slot)
+                host = next((i for i in ids if i in parts and (need, i) not in claimed
+                             and _holds(need, parts[i])), None)
+                if host:
+                    claim(slot, host)
+    # A wheel or mount the function forgot to list still holds exactly one such component.
+    for slot in slots:
+        if slot["part_id"] is None and slot["need"] in HOST_PRIMITIVE and any(listed[f] for f in slot["functions"]):
+            host = next((i for i, part in parts.items() if (slot["need"], i) not in claimed
+                         and part.get("primitive") == HOST_PRIMITIVE[slot["need"]]), None)
+            if host:
+                claim(slot, host)
+    numbered = Counter()
+    for slot in slots:
+        numbered[slot["need"]] += 1
+        slot["unit"] = f"{slot['need']}-{numbered[slot['need']]}"
+    return slots
+
+
+def _item_id(item, index):
+    """A stored id when the inventory has one. Older inventories are stable lists, so the index stands in."""
+    for key in ("item_id", "id"):
+        value = item.get(key)
+        if isinstance(value, (str, int)) and not isinstance(value, bool) and value != "":
+            return str(value), True
+    return f"item-{index}", False
+
+
+def _unit_text(units):
+    """Quantities with the mesh parts they go to, or the function when the model shows no mount."""
+    groups = {}
+    for unit in units:
+        groups.setdefault(unit["need"], []).append(unit)
+    phrases = []
+    for need, group in groups.items():
+        places = [unit["part_label"] for unit in group if unit["part_id"]]
+        places += dict.fromkeys(_name(f) + " function" for unit in group if not unit["part_id"]
+                                for f in unit["functions"])
+        phrases.append(f"{_name(need, len(group))} ({', '.join(places)})")
+    return _join(phrases)
+
+
+def assembly_steps(spec: dict, slots: list[dict], drawer: list[dict], held_out: list[dict]) -> list[str]:
+    """Five to eight steps that name the actual drawer objects, mesh parts and shortfall."""
+    if not slots:
+        return ["Check the dimensions of the model against your sketch.",
+                "Choose the action you want the robot to perform.",
+                "Confirm that action in the interview and mark the relevant part on the drawing.",
+                "Rescan the drawing and review the part names.",
+                "Match the drawer again once the workbench lists the intended action."]
+    hosts = list(dict.fromkeys(slot["part_label"] for slot in slots if slot["part_id"]))
+    shown = hosts[:4] + ([f"{len(hosts) - 4} more"] if len(hosts) > 4 else [])
+    steps = [f"Check the modelled {_join(shown)} against the real parts before printing." if hosts
+             else "Check the model dimensions against the real parts before printing."]
+
+    later = []
+    missing = [slot for slot in slots if slot["status"] == "source"]
+    if missing:
+        later.append(f"Source what the drawer lacks: {_unit_text(missing)}. "
+                     "Compare datasheets and connector sizes before buying.")
+    blocked = [f"drawer item {held['item_index'] + 1} ({held['raw_name']})" for held in held_out if held["blocked"]]
+    if blocked:
+        named = blocked[:3] + ([f"{len(blocked) - 3} more excluded items"] if len(blocked) > 3 else [])
+        later.append(f"Leave {_join(named)} intact and out of the build. "
+                     f"Nothing from {'it' if len(blocked) == 1 else 'them'} is counted.")
+    if any("fly_ish" in slot["functions"] for slot in slots):
+        later.append("Plan a stationary airflow display with guarded fans. Keep the model secured to the table.")
+
+    donors = {}
+    for slot in slots:
+        if slot["status"] == "drawer":
+            donors.setdefault(slot["item_index"], []).append(slot)
+    tools = {row["item_index"]: row["tools"] for row in drawer}
+    lines = [(f"drawer item {index + 1} ({units[0]['raw_name']}) for {_unit_text(units)}", tools[index])
+             for index, units in sorted(donors.items())]
+    room = 4 - len(later)
+    alone = lines if len(lines) <= room else lines[:room - 1]
+    for line, needed in alone:
+        steps.append(f"Inspect {line}.{' Tools: ' + ', '.join(needed) + '.' if needed else ''} "
+                     "Move anything missing or unsuitable to the sourcing list.")
+    if lines[len(alone):]:
+        rest = "; ".join(line for line, _ in lines[len(alone):])
+        steps.append(f"Inspect the remaining candidates the same way: {rest}." if alone else
+                     f"Inspect each candidate: {rest}. Move anything missing or unsuitable to the sourcing list.")
+    steps += later
+
+    loose = Counter(slot["need"] for slot in slots if not slot["part_id"])
+    if loose and len(steps) < 5:
+        root = next((part.get("label") or part["id"] for part in spec.get("parts") or []
+                     if part.get("attach_to") is None), None)
+        steps.append(f"The model shows no mount for {_join(_name(*pair) for pair in loose.items())}. "
+                     f"Decide where each sits"
+                     f"{' in ' + root if root else ''} and route the wiring clear of moving parts.")
+    steps.append("Dry-fit the unpowered components into those parts and check clearances through the intended "
+                 "range of motion." if hosts else
+                 "Dry-fit the unpowered components and check clearances through the intended range of motion.")
+    steps.append("Have a mentor review power, signal levels, and mounting before anything is powered.")
+    names = list(dict.fromkeys(f for slot in slots for f in slot["functions"]))
+    waiting = list(dict.fromkeys(f for slot in missing for f in slot["functions"]))
+    ready = [name for name in names if name not in waiting]
+    steps.append("After the review, test one function at a time."
+                 + (f" Drawer candidates cover every unit for: {_join(map(_name, ready))}." if ready else "")
+                 + (f" Still waiting on sourced parts: {_join(map(_name, waiting))}." if waiting else ""))
+    return steps
+
+
+def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
+    slots = required_units(spec)
+    drawer, held_out, seen = [], [], {}
+    screened = [screen_donor(item) for item in items]
+    excluded_ids = {_item_id(item, i)[0] for i, item in enumerate(screened)
+                    if (item.get("blocked") or item.get("user_excluded")) and _item_id(item, i)[1]}
+    for item_index, item in enumerate(screened):
         label = item.get("label")
+        item_id, explicit = _item_id(item, item_index)
+        raw_name = item.get("raw_name") or KEYS.get(label, "unidentified item")
+        held = {"item_index": item_index, "item_id": item_id, "raw_name": raw_name, "label": label,
+                "blocked": bool(item.get("blocked"))}
+        if explicit and item_id in seen:
+            held_out.append({**held, "reason": f"Same object as drawer item {seen[item_id] + 1}. Counted once."})
+            continue
+        if explicit:
+            seen[item_id] = item_index
+        if not item.get("blocked") and (item.get("user_excluded") or (explicit and item_id in excluded_ids)):
+            held_out.append({**held, "reason": "This object was excluded from the inventory."})
+            continue
         if label not in SOURCES or item.get("blocked") or item.get("condition_note"):
+            reason = item.get("condition_note") or (BLOCK_NOTE if item.get("blocked")
+                                                    else "Unidentified item. No components counted.")
+            held_out.append({**held, "reason": reason})
             continue
         source = SOURCES[label]
+        stored = item.get("candidate_parts")
         for part, available in source["parts"].items():
-            used = min(remaining[part], available)
-            if used:
-                drawer.append({"need": part, "qty": used, "source": source["display"],
-                               "item_index": item_index, "how": source["how"], "tools": source["tools"]})
-                remaining[part] -= used
-    shopping = [{"need": part, "qty": qty, "suggestion": SUGGESTIONS[part]}
-                for part, qty in remaining.items() if qty]
-    total = sum(needs.values())
-    score = round(100 * (total - sum(remaining.values())) / total)
-    steps = ["Check the model dimensions against the real parts before printing."]
-    if drawer:
-        steps.append("Inspect each drawer candidate using its fit and rating checks. Move missing or unsuitable parts to your sourcing list.")
-    if shopping:
-        steps.append("Gather the remaining components on the sourcing list and compare their datasheets and connector sizes.")
-    if "fly_ish" in names:
-        steps.append("Plan a stationary airflow display with guarded fans. Keep the model secured to the table.")
-    steps += ["Dry-fit the unpowered components and check clearances through the intended range of motion.",
-              "Have a mentor review power, signal levels, and mounting before testing one function at a time."]
+            if isinstance(stored, dict):
+                # A stored count may lower the map’s yield for this object. It never raises it.
+                kept = stored.get(part)
+                available = min(available, kept) if type(kept) is int and kept > 0 else 0
+            free = sorted((slot for slot in slots if slot["need"] == part and slot["status"] == "source"),
+                          key=lambda slot: slot["part_id"] is None)[:available]
+            if not free:
+                continue
+            for slot in free:
+                slot.update(status="drawer", item_index=item_index, item_id=item_id, raw_name=raw_name,
+                            source=source["display"], box_2d=item.get("box_2d"))
+            drawer.append({"need": part, "qty": len(free), "source": source["display"],
+                           "item_index": item_index, "how": source["how"], "tools": source["tools"],
+                           "item_id": item_id, "raw_name": raw_name, "box_2d": item.get("box_2d"),
+                           "part_ids": [slot["part_id"] for slot in free if slot["part_id"]],
+                           "functions": list(dict.fromkeys(f for slot in free for f in slot["functions"]))})
+    shopping = []
+    for need in dict.fromkeys(slot["need"] for slot in slots):
+        missing = [slot for slot in slots if slot["need"] == need and slot["status"] == "source"]
+        if missing:
+            shopping.append({"need": need, "qty": len(missing), "suggestion": SUGGESTIONS[need],
+                             "part_ids": [slot["part_id"] for slot in missing if slot["part_id"]],
+                             "functions": list(dict.fromkeys(f for slot in missing for f in slot["functions"]))})
+    score = round(100 * sum(slot["status"] == "drawer" for slot in slots) / len(slots)) if slots else 0
+    steps = assembly_steps(spec, slots, drawer, held_out)
     notes = [f"{hit['project_name']} ({'example, ' if hit.get('seeded') else ''}{hit.get('outcome', 'planned')}): {hit['note']}"
              for hit in memory[:2] if hit.get("project_name") and hit.get("note")]
     return {"from_your_drawer": drawer, "to_source": shopping, "drawer_score": score,
-            "steps": steps, "memory_notes": notes}
+            "steps": steps, "memory_notes": notes, "allocations": slots, "held_out": held_out}
+
+
+def with_allocations(saved: dict, spec: dict, items: list[dict]) -> dict:
+    """Give a plan saved before per-unit joins its allocations, keeping the saved memory notes."""
+    if isinstance(saved.get("allocations"), list):
+        return saved
+    return {**build_plan(spec, items, []), "memory_notes": saved.get("memory_notes", [])}
 
 
 if __name__ == "__main__":
@@ -156,3 +333,12 @@ if __name__ == "__main__":
     assert screen_donor(old_psu)["candidate_parts"] == {} and screen_donor(old_psu)["blocked"]
     assert inventory_item("computer_fan", "Fan", condition="Corroded")["candidate_parts"] == {}
     assert build_plan(air, manual_inventory(["computer_fan"]), [])["from_your_drawer"][0]["qty"] == 1
+    rover = {"parts": [{"id": "mount", "label": "Motor mount", "primitive": "motor_mount", "category": "motion"},
+                       {"id": "eye", "label": "Eye", "primitive": "sphere", "category": "light"}],
+             "functions": [{"name": "spin", "parts": ["mount"]}, {"name": "light_up", "parts": ["eye"]}]}
+    joined = build_plan(rover, one, [])
+    assert [(u["part_id"], u["item_index"]) for u in joined["allocations"] if u["status"] == "drawer"] == [
+        ("mount", 0), ("eye", 1)]
+    assert [h["item_index"] for h in joined["held_out"] if h["blocked"]] == [2, 4]
+    assert 5 <= len(joined["steps"]) <= 8 and "Microwave" in " ".join(joined["steps"])
+    assert with_allocations({"memory_notes": ["kept"]}, rover, one)["memory_notes"] == ["kept"]
