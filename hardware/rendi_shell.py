@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rendi droplet shell: parametric geometry -> print-oriented STLs.
 
-Spec: team-specs/03a-feature-spec-rendi-companion.md, section 6.
+See hardware/README.md for dimensions, print files and fit checks.
 Needs only numpy (python3 rendi_shell.py). Every part is a signed-distance
 function (negative = inside) in ASSEMBLED coordinates, in mm:
     Z up, base on z = 0, +Y = front (face), -Y = back, split plane y = 0.
