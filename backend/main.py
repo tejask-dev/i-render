@@ -393,13 +393,16 @@ def model_file(spec_id: str, name: str):
 
 
 DIST = store.ROOT / "frontend" / "dist"
+workbench = StaticFiles(directory=DIST, html=True, check_dir=False)
 
 
-@app.get("/project/{project_id}", include_in_schema=False)
-def reopen(project_id: str):
-    return FileResponse(DIST / "index.html")
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+@app.api_route("/index.html", methods=["GET", "HEAD"], include_in_schema=False)
+@app.api_route("/project/{project_id}", methods=["GET", "HEAD"], include_in_schema=False)
+async def app_shell(request: Request):
+    response = await workbench.get_response("index.html", request.scope)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
-app.mount(
-    "/", StaticFiles(directory=DIST, html=True, check_dir=False), name="workbench"
-)
+app.mount("/", workbench, name="workbench")
