@@ -24,6 +24,6 @@
 
 ## Track decisions for Zlata
 
-Lead with the overall prizes and Most Adventurous. Prepare PCBWay once a physical prototype can demonstrate the problem it solves. A PCB for the mic, speaker and eyes is a concrete next fabrication step. Demonstrate an actual Gemini request before claiming the Gemini track. Local SQLite is the current memory store. Entire requires evidence captured in Entire itself. Record the same final roster and track choices in both portals. The organizer’s full criteria are in the [event guide](event-guide.md).
+Lead with the overall prizes and Most Adventurous. Prepare PCBWay once a physical prototype can demonstrate the problem it solves. A PCB for the mic, speaker and eyes is a concrete next fabrication step. The youth-outreach demo runs on local Qwen. Leave the Gemini prize unselected. Local SQLite is the current memory store. Entire requires evidence captured in Entire itself. Record the same final roster and track choices in both portals. The organizer’s full criteria are in the [event guide](event-guide.md).
 
 Stop coding and finalize Devpost by **Sunday, Nov 22 at 9 a.m. Toronto time**. Watch the live portal for sponsor slots by 9:45 a.m. Be ready at the assigned general table by 11:30 a.m.

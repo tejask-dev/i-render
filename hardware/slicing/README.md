@@ -2,7 +2,7 @@
 
 ## Companion enclosure
 
-Open [Rendi-P1S.3mf](Rendi-P1S.3mf) as a **project** in Bambu Studio. Plate 1 contains the front half, back half, join ring and faceplate. The estimate for all four together is **2 h 49 min and 76.89 g of PLA** (25.78 m). An 8 a.m. start gives an estimated 10:49 a.m. finish before cooldown and removal. The Saturday room 2247 windows announced to Brian are 8–11 a.m. and 3–7 p.m.
+Open [Rendi-P1S.3mf](Rendi-P1S.3mf) as a **project** in Bambu Studio. Plate 1 contains the front half, back half, join ring and faceplate. The estimate for all four together is **2 h 49 min and 76.89 g of PLA** (25.78 m). The remaining Saturday window for room 2247 runs from 3 to 7 p.m. Confirm the current queue with the operator.
 
 1. Confirm a Bambu Lab P1S, **0.4 mm nozzle**, textured PEI plate and plain 1.75 mm PLA with the lab operator. The project uses Generic PLA at 220 °C with a 55 °C bed. Pick the actual spool in Studio. If the hardware, plate or material differs, change the profile and slice again on site.
 2. Keep the parts at 100% scale in their saved orientations. The two shell halves sit seam-down. The ring lies flat and the faceplate sits on its exported base. The project prints all four by layer on one plate.

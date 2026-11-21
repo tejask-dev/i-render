@@ -172,6 +172,45 @@ def valid_box(box):
             and 0 <= box[0] < box[2] <= 1000 and 0 <= box[1] < box[3] <= 1000)
 
 
+def _same_photo_object(first, second):
+    label = first.get("detected_label", first.get("label"))
+    if label in (None, "other") or label != second.get("detected_label", second.get("label")):
+        return False
+    a, b = first.get("box_2d"), second.get("box_2d")
+    if not valid_box(a) or not valid_box(b):
+        return False
+    overlap = (max(0, min(a[2], b[2]) - max(a[0], b[0])) *
+               max(0, min(a[3], b[3]) - max(a[1], b[1])))
+    union = (a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - overlap
+    # A high intersection-over-union matches detector jitter without joining neighbouring donors.
+    return overlap >= .85 * union
+
+
+def distinct_detections(items, *, preserve_indices=False):
+    reviewed = list(items)
+    first_indices = []
+    for index, item in enumerate(items):
+        first = next((i for i in first_indices if _same_photo_object(items[i], item)), None)
+        if first is None:
+            first_indices.append(index)
+            continue
+        kept = reviewed[first]
+        if kept.get("label") == "other" and item["label"] != "other":
+            kept = {**kept, "label": item["label"], "confidence": item["confidence"]}
+            if not kept.get("blocked"):
+                kept.update(candidate_parts=item["candidate_parts"], condition_note=item.get("condition_note"))
+        if item.get("blocked") and not kept.get("blocked"):
+            kept = {**kept, "blocked": True, "condition_note": item.get("condition_note"),
+                    "candidate_parts": {}}
+        if item.get("user_excluded"):
+            kept = {**kept, "user_excluded": True}
+        reviewed[first] = kept
+        if preserve_indices:
+            reviewed[index] = {**item, "duplicate_of": first, "candidate_parts": {},
+                               "condition_note": f"Same object as drawer item {first + 1}. Counted once."}
+    return reviewed if preserve_indices else [reviewed[i] for i in first_indices]
+
+
 def _objects_schema(key, fields, limit):
     item = {"type": "object", "properties": fields, "required": list(fields)}
     return {"type": "object", "properties": {key: {"type": "array", "maxItems": limit, "items": item}}, "required": [key]}
@@ -190,7 +229,7 @@ async def analyze_junk(image: bytes, *, source=None, model=None, prompt=None) ->
                           context, _objects_schema("items", fields, 15), model=model)
     if not isinstance(raw, dict) or not isinstance(raw.get("items"), list) or len(raw["items"]) > 15:
         raise VisionError(422, "The drawer result was unreadable. Try a closer crop.")
-    items, seen = [], set()
+    items = []
     for obj in raw["items"]:
         if not isinstance(obj, dict) or not valid_box(obj.get("box_2d")):
             raise VisionError(422, "The model could not locate an item. Try a closer crop.")
@@ -201,12 +240,12 @@ async def analyze_junk(image: bytes, *, source=None, model=None, prompt=None) ->
             raise VisionError(422, "The model returned an incomplete identification. Try a clearer photo.")
         a, b, c, d = obj["box_2d"]
         box = [b, a, d, c] if source == "local" else [a, b, c, d]
-        box_key = tuple(box)
-        if box_key not in seen:
-            note = None if condition == "no_visible_damage" else condition.replace("_", " ").capitalize()
-            items.append(inventory_item(label, name.strip()[:100], box=box, confidence=confidence, condition=note))
-            seen.add(box_key)
-    return items
+        note = None if condition == "no_visible_damage" else condition.replace("_", " ").capitalize()
+        item = inventory_item(label, name.strip()[:100], box=box, confidence=confidence, condition=note)
+        if item["label"] == "other" and label in KEYS:
+            item["detected_label"] = label
+        items.append(item)
+    return distinct_detections(items)
 
 
 ROLES = ["base", "body_box", "body_round", "head_box", "head_round", "wheel", "arm", "joint", "gripper", "leg", "eye", "light", "antenna", "accessory"]

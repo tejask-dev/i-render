@@ -254,7 +254,7 @@ async def drawer(
             raise HTTPException(422, "Choose at most 15 known drawer items.")
         source = "manual"
     inventory_id = store.new_id("i")
-    inventory = {"items": [salvage.screen_donor(item) for item in detected]}
+    inventory = {"items": vision.distinct_detections([salvage.screen_donor(item) for item in detected])}
     photo_path = store.PHOTOS / (inventory_id + ".jpg")
     try:
         if image:
@@ -283,7 +283,7 @@ def reviewed_items(items, excluded_indices):
     reviewed = [salvage.screen_donor(item) for item in items]
     for index in excluded_indices:
         reviewed[index] = {**reviewed[index], "user_excluded": True}
-    return reviewed
+    return vision.distinct_detections(reviewed, preserve_indices=True)
 
 
 @app.post("/api/plan")

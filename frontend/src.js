@@ -182,7 +182,7 @@ function speechTools() {
     copy = "Tap to record, then tap to stop. Audio is transcribed on this Mac.";
   } else if (Recognition) {
     label = "Dictate answer";
-    copy = "Uses your browser’s speech service. Typing works too.";
+    copy = "Your browser may send audio off this Mac for transcription. You can also type your answer.";
   } else
     return '<div class="speech-tools"><small>Type your answers. Voice input is unavailable in this browser.</small></div>';
   return `<div class="speech-tools"><button type="button" class="quiet" data-action="dictate">${icon("mic")} <span>${label}</span></button><small>${copy}</small></div>`;
@@ -340,7 +340,7 @@ function selectPart(id) {
     ).join("");
     const missing = unfilled.map((unit) => `<p>Still to source · ${esc(pretty(unit.need))}</p>`).join("");
     const status = plan?.allocations ? (matched + missing || "<p>No drawer component is assigned to this model part.</p>") : "";
-    info.innerHTML = `<h3>${esc(part.label)}</h3><p>${esc(pretty(part.category))} · ${esc(pretty(part.primitive))}</p><dl><dt>Model dimensions</dt><dd>${esc(dims)}</dd><dt>Function</dt><dd>${esc(part.function || functions.map(pretty).join(", ") || "Structure")}</dd></dl>${status}`;
+    info.innerHTML = `<h3>${esc(part.label)}</h3><p>${esc(pretty(part.category))} · ${esc(pretty(part.primitive))}</p><dl><dt>Model dimensions</dt><dd>${esc(dims)}</dd><dt>Function</dt><dd>${esc(part.function || functions.map(pretty).join(", ") || "Unassigned")}</dd></dl>${status}`;
   }
   viewer?.select(id);
 }
@@ -748,6 +748,8 @@ function acceptFile(kind, file) {
   if (s[name]) URL.revokeObjectURL(s[name]);
   s[name] = URL.createObjectURL(file);
   s[kind === "sketch" ? "sketchFile" : "photo"] = file;
+  s.providers[kind] = "local";
+  s.error = "";
   render();
   return true;
 }

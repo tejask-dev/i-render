@@ -1,7 +1,6 @@
 # Rendi droplet shell (Brian)
 
-Printable shell for the Rendi companion, built to `team-specs/03a-feature-spec-rendi-companion.md` §6.
-The shell houses the electronics for the voice companion.
+This four-piece enclosure holds Rendi’s microphone, speaker and faceplate.
 
 **The four pieces are sliced for a Bambu P1S.** The plate estimate is **2 h 49 min and 76.89 g PLA**. Dimensions and clearances below come from the digital mesh. Physical fit awaits the first print. [Open the Bambu Studio project](slicing/Rendi-P1S.3mf) · [Printer settings and queue instructions](slicing/README.md)
 

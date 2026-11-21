@@ -10,13 +10,13 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 
 
 async def check(directory):
-    from backend import main, store, vision
+    from backend import main, salvage, store, vision
     from backend.templates import TEMPLATES
 
     store.initialize()
@@ -28,6 +28,23 @@ async def check(directory):
     calls = []
     local_unavailable = False
     configured = "gemini-2.5-flash"
+
+    # Close boxes on a single donor count once. Another car beside it is a distinct donor.
+    first_box, repeat_box, neighbour = [50, 50, 350, 350], [53, 52, 353, 352], [50, 370, 350, 670]
+    def detection(label, box, condition="no_visible_damage", confidence=.95):
+        return {"label": label, "raw_name": label, "box_2d": box, "condition": condition, "confidence": confidence}
+
+    safe = [detection("rc_car", first_box), detection("rc_car", repeat_box),
+            detection("rc_car", neighbour), detection("flashlight", first_box)]
+    damaged = detection("rc_car", repeat_box, condition="corroded", confidence=.55)
+    for rows in (safe, [*safe, damaged], [damaged, *safe]):
+        with patch.object(vision, "_generate", new=AsyncMock(return_value={"items": rows})):
+            found = await vision.analyze_junk(image, source="gemini")
+        assert [item["label"] for item in found] == ["rc_car", "rc_car", "flashlight"]
+        assert found[1]["box_2d"] == neighbour
+        assert bool(found[0]["blocked"]) == (rows is not safe) and not found[1]["blocked"]
+        if rows is not safe:
+            assert not found[0]["candidate_parts"] and "corroded" in found[0]["condition_note"].lower()
 
     def service(request):
         url = request.url
@@ -107,6 +124,21 @@ async def check(directory):
             held = next(i for i in plan["plan"]["held_out"] if i["item_index"] == 0)
             assert not held["blocked"] and "exclud" in held["reason"].lower()
             assert (await client.get(reopened["inventory"]["photo_url"])).content == vision.read_image(image)
+            # A saved photo can predate deduplication and already have an overstated allocation.
+            legacy_items = [salvage.inventory_item("rc_car", "RC car", box=box, confidence=.95,
+                                condition="Corroded" if i == 1 else None)
+                            for i, box in enumerate([first_box, repeat_box, neighbour])]
+            old_inventory = store.put("inventory", {"source": "local", "inventory": {"items": legacy_items}})
+            original = {**args, "inventory_id": old_inventory, "plan": {**plan["plan"], "drawer_score": 100}}
+            old_plan = store.put("plan", original)
+            old_project = await post("projects", json={"plan_id": old_plan})
+            restored = (await client.get("/api/projects/" + old_project["project_id"])).raise_for_status().json()
+            items = restored["inventory"]["items"]
+            assert len(items) == 3 and items[0]["blocked"] and items[1]["duplicate_of"] == 0
+            assert not items[0]["candidate_parts"] and not items[1]["candidate_parts"] and items[2] == legacy_items[2]
+            assert {slot["item_index"] for slot in restored["plan"]["allocations"] if slot["status"] == "drawer"} == {2}
+            reviewed = main.reviewed_items([legacy_items[0], {**legacy_items[0], "box_2d": repeat_box}], [1])
+            assert reviewed[0]["user_excluded"] and reviewed[1]["duplicate_of"] == 0
             with patch.dict(os.environ, {"GEMINI_API_KEY": ""}):
                 before = len(calls)
                 assert (await client.post("/api/sketch", data={"brief_id": bid, "provider": "gemini"}, files=files)).status_code == 503
@@ -118,4 +150,4 @@ if __name__ == "__main__":
         "GEMINI_API_KEY": "test-only", "GEMINI_MODEL": "", "RENDI_STATE_DIR": work
     }):
         asyncio.run(check(Path(work)))
-    print("PASS default local, offline cache, edited prompt, Gemini list and repair, saved JPEGs, exclusions and recall (mock providers)")
+    print("PASS default local, offline cache, edited prompt, Gemini list and repair, saved JPEGs, exclusions, duplicate photos and legacy recall (mock providers)")
