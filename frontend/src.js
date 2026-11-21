@@ -61,10 +61,13 @@ const ranks = {
   inventory: 3,
   result: 4,
 };
-let voiceNotice = "";
+let voiceNotice = "", voiceActivity = "idle", inputActivity = "idle";
 const output = createVoiceOutput((text) => {
   voiceNotice = text;
   message(s.error || configProblem || text);
+}, window, (state) => {
+  voiceActivity = state;
+  updateCompanion();
 });
 const cloudVoiceAvailable = () => Boolean(config.elevenlabs_voice_available && window.Audio);
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -109,6 +112,27 @@ function updateVoiceButton() {
   button.disabled = voiceProvider === "browser" ? !output.browserAvailable : !cloudVoiceAvailable();
   button.setAttribute("aria-pressed", String(voiceOn));
   button.innerHTML = icon(voiceOn ? "volume-2" : "volume-x") + ` <span>Voice ${voiceOn ? "on" : "off"}</span>`;
+}
+function companion() {
+  return `<aside class="companion" data-rendi data-state="idle" aria-label="Rendi, your on-screen build companion"><svg class="rendi-face" viewBox="0 0 320 290" aria-hidden="true"><ellipse class="rendi-shadow" cx="160" cy="266" rx="77" ry="10"/><g class="rendi-body"><path class="rendi-shell" d="M160 20C152 62 63 102 63 176a97 83 0 00194 0C257 102 168 62 160 20Z"/><path class="rendi-shine" d="M140 79c-31 28-53 52-56 78"/><rect class="rendi-mask" x="91" y="135" width="138" height="82" rx="35"/><g class="rendi-eyes"><rect x="115" y="156" width="21" height="33" rx="10"/><rect x="184" y="156" width="21" height="33" rx="10"/></g><path class="rendi-mouth" d="M149 197q11 8 22 0"/><circle class="rendi-cheek" cx="104" cy="193" r="6"/><circle class="rendi-cheek" cx="216" cy="193" r="6"/></g></svg><div class="companion-caption"><strong>Rendi</strong><span data-rendi-status role="status" aria-live="polite">Ready when you are</span></div></aside>`;
+}
+function updateCompanion() {
+  const face = $("[data-rendi]");
+  if (!face) return;
+  const state = inputActivity === "listening" ? "listening"
+    : inputActivity !== "idle" ? "thinking"
+    : voiceActivity === "speaking" ? "speaking" : s.busy ? "thinking" : voiceActivity;
+  face.dataset.state = state;
+  const label = inputActivity === "opening" ? "Opening microphone…"
+    : inputActivity === "transcribing" ? "Transcribing on this Mac…"
+    : inputActivity === "recognizing" ? "Transcribing with your browser…"
+    : (state === "thinking" && s.busy) || ({ idle: "Ready when you are", listening: "Listening · tap the mic to stop", thinking: "Preparing my voice…", speaking: "Speaking…" })[state];
+  const status = $("[data-rendi-status]");
+  if (status && status.textContent !== label) status.textContent = label;
+}
+function setInputActivity(state) {
+  inputActivity = state;
+  updateCompanion();
 }
 function voiceControls() {
   const option = (value, name, available) =>
@@ -182,7 +206,7 @@ function progress() {
   return `<ol class="progress" aria-label="Build progress">${steps.map((step, i) => `<li class="${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}><span>${i < n ? icon("check") : i + 1}</span>${step}</li>`).join("")}</ol>`;
 }
 function home() {
-  return `<section class="hero"><div class="hero-content"><div class="eyebrow"><i></i>Robot workshop</div><h1 tabindex="-1">Build a robot<br>with <em>Rendi.</em></h1><p>Turn a sketch and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start a build", "start")}${btn("Project notebook", "notebook", "secondary", "book-open")}</div></div><div class="hero-art"><img src="/rendi-workshop.webp" alt="Rendi, a turquoise droplet robot, waving from a workbench covered in sketches and spare parts."></div></section><section class="starter-section"><div class="row-title"><div><span class="eyebrow"><i></i>Sketchbook</span><h2>Start with a sketch</h2></div><span class="hint">Choose a starter robot to make your own.</span></div><div class="starters">${exampleCards("Start with")}</div></section>`;
+  return `<section class="hero"><div class="hero-content"><div class="eyebrow"><i></i>Robot workshop</div><h1 tabindex="-1">Build a robot<br>with <em>Rendi.</em></h1><p>Turn a sketch and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start a build", "start")}${btn("Project notebook", "notebook", "secondary", "book-open")}</div></div><div class="hero-art">${companion()}</div></section><section class="starter-section"><div class="row-title"><div><span class="eyebrow"><i></i>Sketchbook</span><h2>Start with a sketch</h2></div><span class="hint">Choose a starter robot to make your own.</span></div><div class="starters">${exampleCards("Start with")}</div></section>`;
 }
 const questions = [
   "How big is your robot?",
@@ -231,11 +255,11 @@ function interview() {
       )
       .join("")}</div></fieldset>`,
   ];
-  return `<div class="interview-layout"><aside class="companion"><img src="/rendi-workshop.webp" alt="Rendi in the workshop"><div><span>${drop} Rendi</span><small>Your build companion</small></div></aside><div class="card form-card"><span class="eyebrow"><i></i>Project brief · ${s.slot + 1} of 3</span>${title(question())}<p>${["Palm-sized or floor-roaming? Let’s give it room to move.", "Give it a little personality.", "Tell me what it does when nobody’s watching."][s.slot]}</p><form id="interview-form">${blocks[s.slot]}${speechTools()}<div class="actions"><button class="primary" type="submit">${s.editing ? "Update brief" : s.slot === 2 ? "Review brief" : "Continue"} ${icon("arrow-right")}</button>${s.slot > 0 && !s.editing ? btn("Back", "previous", "text-btn", "") : ""}</div></form>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>Rendi remembers ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)} · ${s.hits[0].seeded ? "example memory" : "saved project"}</p></div></div>` : ""}</div></div>`;
+  return `<div class="interview-layout">${companion()}<div class="card form-card"><span class="eyebrow"><i></i>Project brief · ${s.slot + 1} of 3</span>${title(question())}<p>${["Palm-sized or floor-roaming? Let’s give it room to move.", "Give it a little personality.", "Tell me what it does when nobody’s watching."][s.slot]}</p><form id="interview-form">${blocks[s.slot]}${speechTools()}<div class="actions"><button class="primary" type="submit">${s.editing ? "Update brief" : s.slot === 2 ? "Review brief" : "Continue"} ${icon("arrow-right")}</button>${s.slot > 0 && !s.editing ? btn("Back", "previous", "text-btn", "") : ""}</div></form>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>Rendi remembers ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)} · ${s.hits[0].seeded ? "example memory" : "saved project"}</p></div></div>` : ""}</div></div>`;
 }
 function confirmBrief() {
   const b = s.brief;
-  return `<div class="narrow">${toolHead("Project brief", "Did I get that right?", "Change any answer before we move to your sketch.")}<form id="confirm-form" class="card form-card"><label>Project name<input id="name" maxlength="60" required value="${esc(b.project_name)}"></label><dl class="summary">${[
+  return `<div class="interview-layout">${companion()}<div>${toolHead("Project brief", "Did I get that right?", "Change any answer before we move to your sketch.")}<form id="confirm-form" class="card form-card"><label>Project name<input id="name" maxlength="60" required value="${esc(b.project_name)}"></label><dl class="summary">${[
     ["Scale", pretty(b.scale) + " · " + b.approx_size_cm + " cm"],
     ["Vibe", b.vibe.join(", ")],
     [
@@ -251,7 +275,7 @@ function confirmBrief() {
     )
     .join(
       "",
-    )}</dl>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>${s.hits[0].seeded ? "Example memory" : "From your notebook"} · ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)}</p></div></div>` : ""}<button class="primary" type="submit">Confirm brief ${icon("check")}</button></form></div>`;
+    )}</dl>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>${s.hits[0].seeded ? "Example memory" : "From your notebook"} · ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)}</p></div></div>` : ""}<button class="primary" type="submit">Confirm brief ${icon("check")}</button></form></div></div>`;
 }
 function availableProviders() {
   return config.vision_providers || {
@@ -503,12 +527,8 @@ function render() {
   const generation = viewGeneration;
   viewer?.dispose();
   viewer = null;
-  if (recognition) {
-    recognition.onend = null;
-    recognition.onerror = null;
-    recognition.abort();
-    recognition = null;
-  }
+  cancelRecognition();
+  inputActivity = "idle";
   const outer = {
     home,
     interview,
@@ -520,8 +540,9 @@ function render() {
     result,
     notebook,
   };
-  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I, Render home">${drop}<span>I, Render<span class="brand-period">.</span></span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I, Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I, Render home">${drop}<span>I, Render<span class="brand-period">.</span></span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I, Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
   updateVoiceButton();
+  updateCompanion();
   if (s.stage === "model" || s.stage === "result") {
     const id = s.selectedPart || s.model.spec.parts[0]?.id;
     selectPart(id);
@@ -665,6 +686,7 @@ function cancelRecording() {
   if (session.recorder?.state === "recording") session.recorder.stop();
   session.stream?.getTracks().forEach((track) => track.stop());
   session.controller.abort();
+  setInputActivity("idle");
 }
 async function deviceDictation() {
   if (recording) {
@@ -680,6 +702,7 @@ async function deviceDictation() {
   try {
     output.stop();
     status("Opening microphone…");
+    setInputActivity("opening");
     session.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     if (recording !== session) {
       session.stream.getTracks().forEach((track) => track.stop());
@@ -698,6 +721,7 @@ async function deviceDictation() {
       if (e.data.size) chunks.push(e.data);
     };
     recorder.onerror = () => {
+      if (recording !== session) return;
       cancelRecording();
       status("On-device dictation");
       message("Recording failed. Try again or type your answer.");
@@ -707,6 +731,7 @@ async function deviceDictation() {
       session.stream.getTracks().forEach((track) => track.stop());
       if (recording !== session) return;
       status("Transcribing on this Mac…");
+      setInputActivity("transcribing");
       try {
         const data = new FormData();
         data.append(
@@ -721,16 +746,22 @@ async function deviceDictation() {
         });
         if (recording === session) {
           recording = null;
+          setInputActivity("idle");
+          status("On-device dictation");
           acceptTranscript(String(result.text || "").trim(), session.originalValue);
         }
       } catch (e) {
         if (recording === session) message(e.message);
       } finally {
-        if (recording === session) recording = null;
-        status("On-device dictation");
+        if (recording === session) {
+          recording = null;
+          setInputActivity("idle");
+          status("On-device dictation");
+        }
       }
     };
     recorder.start();
+    setInputActivity("listening");
     status("Listening… tap to stop");
     session.timer = setTimeout(() => {
       if (recorder.state === "recording") recorder.stop();
@@ -747,6 +778,15 @@ async function deviceDictation() {
     }
   }
 }
+function cancelRecognition() {
+  const current = recognition;
+  recognition = null;
+  if (current) {
+    current.onstart = current.onaudioend = current.onend = current.onerror = current.onresult = null;
+    current.abort();
+    setInputActivity("idle");
+  }
+}
 function dictation() {
   if (localDictation()) {
     deviceDictation();
@@ -754,6 +794,7 @@ function dictation() {
   }
   if (!Recognition) return;
   if (recognition) {
+    setInputActivity("recognizing");
     recognition.stop();
     return;
   }
@@ -766,13 +807,24 @@ function dictation() {
     slot = s.slot,
     originalValue = answerField()?.value;
   const el = $('[data-action="dictate"] span');
-  if (el) el.textContent = "Listening… tap to stop";
+  if (el) el.textContent = "Opening microphone…";
   output.stop();
+  setInputActivity("opening");
+  r.onstart = () => {
+    if (recognition !== r) return;
+    setInputActivity("listening");
+    if (el) el.textContent = "Listening… tap to stop";
+  };
+  r.onaudioend = () => {
+    if (recognition === r) setInputActivity("recognizing");
+  };
   r.onresult = (e) => {
     if (recognition === r && s.stage === stage && s.slot === slot)
       acceptTranscript(e.results[0][0].transcript.trim(), originalValue);
   };
-  r.onerror = (e) =>
+  r.onerror = (e) => {
+    if (recognition !== r) return;
+    setInputActivity("idle");
     message(
       "Speech input " +
         (e.error === "not-allowed"
@@ -780,8 +832,11 @@ function dictation() {
           : "is unavailable") +
         ". You can type your answer.",
     );
+  };
   r.onend = () => {
-    if (recognition === r) recognition = null;
+    if (recognition !== r) return;
+    recognition = null;
+    setInputActivity("idle");
     const text = $('[data-action="dictate"] span');
     if (text) text.textContent = "Dictate answer";
   };
@@ -789,6 +844,8 @@ function dictation() {
     r.start();
   } catch {
     recognition = null;
+    setInputActivity("idle");
+    if (el) el.textContent = "Dictate answer";
     message("Speech input could not start. You can type your answer.");
   }
 }
@@ -1245,6 +1302,7 @@ async function boot() {
 }
 window.addEventListener("pagehide", output.stop);
 window.addEventListener("pagehide", cancelRecording);
+window.addEventListener("pagehide", cancelRecognition);
 window.addEventListener("pagehide", closeCamera);
 window.addEventListener("focus", () => {
   if (s.stage === "sketch" || s.stage === "drawer") refreshProviders();

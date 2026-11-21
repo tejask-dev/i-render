@@ -1,9 +1,15 @@
-export function createVoiceOutput(notice, platform = window) {
+export function createVoiceOutput(notice, platform = window, onState = () => {}) {
   const synth = platform.speechSynthesis;
   const browserAvailable = Boolean(synth && platform.SpeechSynthesisUtterance);
-  let generation = 0, controller, audio, url;
+  let generation = 0, controller, audio, url, state = "idle";
 
-  function stop() {
+  function setState(next) {
+    if (next === state) return;
+    state = next;
+    try { onState(next); } catch {}
+  }
+
+  function reset(next) {
     generation++;
     controller?.abort();
     controller = null;
@@ -15,6 +21,11 @@ export function createVoiceOutput(notice, platform = window) {
     if (url) platform.URL.revokeObjectURL(url);
     url = null;
     synth?.cancel();
+    setState(next);
+  }
+
+  function stop() {
+    reset("idle");
   }
 
   function speakInBrowser(text) {
@@ -26,8 +37,12 @@ export function createVoiceOutput(notice, platform = window) {
       if (localVoice) utterance.voice = localVoice;
       utterance.rate = 1;
       utterance.pitch = 1.08;
+      utterance.onstart = () => { if (current === generation) setState("speaking"); };
+      utterance.onend = () => { if (current === generation) setState("idle"); };
       utterance.onerror = () => {
-        if (current === generation) notice("Browser speech could not play. You can continue on screen.");
+        if (current !== generation) return;
+        setState("idle");
+        notice("Browser speech could not play. You can continue on screen.");
       };
       synth.speak(utterance);
     } catch {
@@ -36,11 +51,12 @@ export function createVoiceOutput(notice, platform = window) {
   }
 
   async function say(text, provider) {
-    stop();
     if (provider !== "elevenlabs") {
+      stop();
       speakInBrowser(text);
       return;
     }
+    reset("thinking");
     const current = generation;
     controller = new AbortController();
     function fallback() {
@@ -70,6 +86,7 @@ export function createVoiceOutput(notice, platform = window) {
       audio.onended = () => { if (current === generation) stop(); };
       audio.onerror = fallback;
       await audio.play();
+      if (current === generation) setState("speaking");
     } catch {
       fallback();
     }
