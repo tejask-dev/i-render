@@ -1,6 +1,7 @@
 import "@fontsource-variable/bricolage-grotesque/wght.css";
 import "@fontsource-variable/dm-sans/wght.css";
 import "./style.css";
+import { spokenCentimeters, spokenVibe } from "./dictation.js";
 import {
   icon,
   esc,
@@ -550,19 +551,13 @@ async function loadProject(id) {
     goto("result");
   });
 }
-function spokenCentimeters(phrase) {
-  const numbers = phrase.match(/-?(?:\d*\.\d+|\d+)/g) || [];
-  if (numbers.length !== 1 || /\d\s*,\s*\d/.test(phrase)) return null;
-  const match = phrase.match(/(-?(?:\d*\.\d+|\d+))\s*-?\s*(?:(mm|millimet(?:er|re)s?|cm|centimet(?:er|re)s?|in(?:ch|ches)?|ft|foot|feet)\b|(["″'′]))/i);
-  if (!match) return null;
-  const unit = (match[2] || match[3]).toLowerCase();
-  const factor = /^(mm|milli)/.test(unit) ? 0.1
-    : /^(in|["″])/.test(unit) ? 2.54 : /^(f|['′])/.test(unit) ? 30.48 : 1;
-  const cm = Math.round(Number(match[1]) * factor);
-  return cm >= 3 && cm <= 150 ? cm : null;
-}
-function acceptTranscript(phrase) {
+const answerField = () => $(["#size", "#vibe", "#adventure"][s.slot]);
+function acceptTranscript(phrase, originalValue) {
   const slot = s.slot;
+  if (answerField()?.value !== originalValue) {
+    message("Kept the answer you typed while dictation was running.");
+    return;
+  }
   if (!phrase) {
     message("I didn’t hear an answer. Try again or type it below.");
     return;
@@ -583,19 +578,19 @@ function acceptTranscript(phrase) {
               : "";
     capture();
     const cm = spokenCentimeters(phrase);
-    if (scale) s.brief.scale = scale;
+    const scaleOnly = scale && /^(?:a |an )?(?:handheld|desktop|floor|wearable|(?:desk|table|palm|floor)[ -]sized)(?: robot)?[.!?]?$/i.test(phrase.trim());
+    if (scale && (cm !== null || scaleOnly)) s.brief.scale = scale;
     if (cm !== null) s.brief.approx_size_cm = cm;
-    else if (scale && !/\d/.test(phrase)) s.brief.approx_size_cm = scales[scale][1];
+    else if (scaleOnly) s.brief.approx_size_cm = scales[scale][1];
     render();
+    if (cm === null && !scaleOnly) $("#size").value = originalValue;
     message("Heard “" + phrase + "”. " +
-      (cm === null && /\d/.test(phrase)
-        ? "Enter one size in centimeters before continuing."
-        : "Check the size before continuing."));
+      (cm !== null ? "Check the size before continuing." : scaleOnly
+        ? "The " + scale + " preset uses " + s.brief.approx_size_cm + " cm. You can edit it before continuing."
+        : "I couldn’t identify one size with units. Review the size field or enter centimeters before continuing."));
   }
   if (slot === 1)
-    $("#vibe").value = phrase
-      .replace(/[.!?]+$/, "")
-      .replace(/\s+(and|or)\s+/gi, ", ");
+    $("#vibe").value = spokenVibe(phrase);
   if (slot === 2) {
     $("#adventure").value = phrase;
     message("Check the adventure and select what the robot should do.");
@@ -615,7 +610,7 @@ async function deviceDictation() {
     if (recording.recorder?.state === "recording") recording.recorder.stop();
     return;
   }
-  const session = { controller: new AbortController() };
+  const session = { controller: new AbortController(), originalValue: answerField()?.value };
   recording = session;
   const status = (text) => {
     const label = $('[data-action="dictate"] span');
@@ -665,7 +660,7 @@ async function deviceDictation() {
         });
         if (recording === session) {
           recording = null;
-          acceptTranscript(String(result.text || "").trim());
+          acceptTranscript(String(result.text || "").trim(), session.originalValue);
         }
       } catch (e) {
         if (recording === session) message(e.message);
@@ -707,13 +702,14 @@ function dictation() {
   r.interimResults = false;
   r.continuous = false;
   const stage = s.stage,
-    slot = s.slot;
+    slot = s.slot,
+    originalValue = answerField()?.value;
   const el = $('[data-action="dictate"] span');
   if (el) el.textContent = "Listening… tap to stop";
   if (voiceCapable) speechSynthesis.cancel();
   r.onresult = (e) => {
-    if (s.stage === stage && s.slot === slot)
-      acceptTranscript(e.results[0][0].transcript.trim());
+    if (recognition === r && s.stage === stage && s.slot === slot)
+      acceptTranscript(e.results[0][0].transcript.trim(), originalValue);
   };
   r.onerror = (e) =>
     message(
