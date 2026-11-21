@@ -48,7 +48,26 @@
         "qty": { "$ref": "#/$defs/quantity" },
         "suggestion": { "type": "string" },
         "part_ids": { "$ref": "#/$defs/strings" },
-        "functions": { "$ref": "#/$defs/strings" }
+        "functions": { "$ref": "#/$defs/strings" },
+        "alternatives": {
+          "type": "array",
+          "description": "Unused donor components to consider after adaptation and compatibility review. These suggestions do not fulfill a need or increase the drawer score.",
+          "items": { "$ref": "#/$defs/alternative" }
+        }
+      }
+    },
+    "alternative": {
+      "type": "object",
+      "required": ["component", "qty", "item_index", "item_id", "raw_name", "source", "box_2d", "note"],
+      "properties": {
+        "component": { "type": "string" },
+        "qty": { "$ref": "#/$defs/quantity" },
+        "item_index": { "$ref": "#/$defs/index" },
+        "item_id": { "type": "string" },
+        "raw_name": { "type": "string" },
+        "source": { "type": "string" },
+        "box_2d": { "$ref": "#/$defs/box" },
+        "note": { "type": "string" }
       }
     },
     "allocation": {

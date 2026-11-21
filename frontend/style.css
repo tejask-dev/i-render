@@ -1036,6 +1036,12 @@ details li {
 .part-row p {
   margin: 0.4rem 0;
 }
+.alternatives {
+  margin-top: 0.75rem;
+}
+.alternatives ul {
+  padding-left: 1.25rem;
+}
 .build-steps {
   padding-left: 1.3rem;
 }

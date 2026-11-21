@@ -26,12 +26,24 @@ SUGGESTIONS = {
     "small_display": "A small compatible display, such as an SSD1306 OLED breakout.",
     "fan": "A guarded low-voltage fan for a stationary airflow effect.",
 }
+ADAPTATIONS = {
+    "servo": ("stepper_motor", "Redesign the joint and control system for a matching stepper driver and a position reference."),
+    "battery_pack": ("battery_holder", "Add suitable cells. Verify the assembled supply voltage and current rating for the whole load."),
+    "led": ("rgb_led", "Use one identified colour channel with a current-limiting resistor sized for its voltage and current rating."),
+    "speaker": ("piezo", "A passive piezo needs a suitable drive signal for tones. Spoken audio or recorded music still needs a suitable speaker."),
+    "dc_motor": ("vibration_motor", "Redesign the effect and mounting for vibration. A load-bearing rotating axle still needs a motor rated for its torque."),
+}
 HAZARDOUS_NAME = re.compile(
     r"microwave|\bcrt\b|cathode.?ray|(?:disposable|single.use|flash) camera|"
     r"\blithium\b|li[ -]?(?:ion|po)\b|\b(?:swollen|corroded|leaking|burnt|burned|scorched|cracked|damaged|broken)\b",
     re.I,
 )
 POWER_SUPPLY_NAME = re.compile(r"\bpsu\b|\bpower[ _-]*suppl(?:y|ies)\b|\batx[ _-]*supply\b", re.I)
+MAINS_NAME = re.compile(r"\bmains\b|\bac[ -]powered\b|\b(?:110|115|120|220|230|240)\s*(?:v|vac|volts?)\b", re.I)
+INSTALLED_NAME = re.compile(r"\b(?:built[ -]into|(?:installed|embedded|mounted) (?:in|on)|soldered (?:to|onto)|"
+                            r"(?:in|inside) (?:an? |the )?(?:sealed|closed|(?:old |intact )?(?:smartphone|phone))|"
+                            r"from (?:an? |the )?smoke[ -](?:alarm|detector))\b", re.I)
+LOOSE_ADAPTATION_LABELS = {"loose_stepper_motor", "loose_rgb_led", "loose_piezo", "loose_vibration_motor"}
 BLOCK_NOTE = "Excluded from salvage. Leave this item intact."
 SHARED = {"microcontroller", "battery_pack"}
 # Mesh parts built to hold one component. Needs without a host stay function-level electronics.
@@ -56,6 +68,12 @@ def screen_donor(item: dict) -> dict:
     if label in BLOCKED or HAZARDOUS_NAME.search(raw_name) or item.get("blocked"):
         return {**item, "blocked": True, "candidate_parts": {},
                 "condition_note": item.get("condition_note") or BLOCK_NOTE}
+    if (label in LOOSE_ADAPTATION_LABELS or label in {"string_lights", "tv_remote"}) and MAINS_NAME.search(raw_name):
+        return {**item, "blocked": True, "candidate_parts": {},
+                "condition_note": "This description identifies mains power. Leave the device intact."}
+    if label in LOOSE_ADAPTATION_LABELS and INSTALLED_NAME.search(raw_name):
+        return {**item, "blocked": True, "candidate_parts": {},
+                "condition_note": "Use only a separately identified loose component. Leave assembled devices intact."}
     photo = item.get("box_2d") is not None or item.get("confidence") is not None
     if label in DETACHED_CHECK and photo and not item.get("blocked"):
         return {**item, "blocked": True, "candidate_parts": {},
@@ -251,9 +269,9 @@ def assembly_steps(spec: dict, slots: list[dict], drawer: list[dict], held_out: 
     return steps
 
 
-def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
-    slots = required_units(spec)
-    drawer, held_out, seen = [], [], {}
+def _donor_components(items):
+    """Return candidate quantities capped by catalog yields and objects held out of the build."""
+    components, held_out, seen = [], [], {}
     screened = [screen_donor(item) for item in items]
     excluded_ids = {_item_id(item, i)[0] for i, item in enumerate(screened)
                     if (item.get("blocked") or item.get("user_excluded")) and _item_id(item, i)[1]}
@@ -271,30 +289,65 @@ def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
         if not item.get("blocked") and (item.get("user_excluded") or (explicit and item_id in excluded_ids)):
             held_out.append({**held, "reason": "This object was excluded from the inventory."})
             continue
+        if item.get("duplicate_of") is not None:
+            reason = item.get("condition_note") or "Repeated inventory detection. Counted once."
+            held_out.append({**held, "reason": reason})
+            continue
         if label not in SOURCES or item.get("blocked") or item.get("condition_note"):
             reason = item.get("condition_note") or (BLOCK_NOTE if item.get("blocked")
                                                     else "Unidentified item. No components counted.")
             held_out.append({**held, "reason": reason})
             continue
         source = SOURCES[label]
-        stored = item.get("candidate_parts")
-        for part, available in source["parts"].items():
-            if isinstance(stored, dict):
-                # A stored count may lower the map’s yield for this object. It never raises it.
-                kept = stored.get(part)
-                available = min(available, kept) if type(kept) is int and kept > 0 else 0
-            free = sorted((slot for slot in slots if slot["need"] == part and slot["status"] == "source"),
-                          key=lambda slot: slot["part_id"] is None)[:available]
-            if not free:
-                continue
-            for slot in free:
-                slot.update(status="drawer", item_index=item_index, item_id=item_id, raw_name=raw_name,
-                            source=source["display"], box_2d=item.get("box_2d"))
-            drawer.append({"need": part, "qty": len(free), "source": source["display"],
-                           "item_index": item_index, "how": source["how"], "tools": source["tools"],
-                           "item_id": item_id, "raw_name": raw_name, "box_2d": item.get("box_2d"),
-                           "part_ids": [slot["part_id"] for slot in free if slot["part_id"]],
-                           "functions": list(dict.fromkeys(f for slot in free for f in slot["functions"]))})
+        donor = {"item_index": item_index, "item_id": item_id, "raw_name": raw_name,
+                 "source": source["display"], "box_2d": item.get("box_2d")}
+        # Legacy inventories omitted this field. An explicit count can only lower the map's yield.
+        stored = item.get("candidate_parts", source["parts"])
+        if isinstance(stored, dict):
+            for part, limit in source["parts"].items():
+                count = stored.get(part)
+                if type(count) is int and count > 0:
+                    components.append((donor, part, min(count, limit), source))
+    return components, held_out
+
+
+def _with_alternatives(shopping, slots, components):
+    used = Counter((u["item_index"], u["need"]) for u in slots if u["status"] == "drawer")
+    eligible_missing = Counter(u["need"] for u in slots if u["status"] == "source"
+                               and (u["need"] != "dc_motor" or u["functions"] == ["spin"]))
+    rows = []
+    for row in shopping:
+        need = row["need"]
+        options = []
+        if need in ADAPTATIONS:
+            substitute, note = ADAPTATIONS[need]
+            remaining = min(row["qty"], eligible_missing[need])
+            for donor, part, available, _ in components:
+                if part == substitute:
+                    qty = min(remaining, available - used[donor["item_index"], part])
+                    if qty > 0:
+                        options.append({**donor, "component": part, "qty": qty, "note": note})
+                        remaining -= qty
+                if remaining == 0:
+                    break
+        rows.append({**row, "alternatives": options})
+    return rows
+
+
+def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
+    slots = required_units(spec)
+    components, held_out = _donor_components(items)
+    drawer = []
+    for donor, part, available, source in components:
+        free = sorted((slot for slot in slots if slot["need"] == part and slot["status"] == "source"),
+                      key=lambda slot: slot["part_id"] is None)[:available]
+        if not free:
+            continue
+        for slot in free:
+            slot.update(status="drawer", **donor)
+        drawer.append({**donor, "need": part, "qty": len(free), "how": source["how"], "tools": source["tools"],
+                       "part_ids": [slot["part_id"] for slot in free if slot["part_id"]],
+                       "functions": list(dict.fromkeys(f for slot in free for f in slot["functions"]))})
     shopping = []
     for need in dict.fromkeys(slot["need"] for slot in slots):
         missing = [slot for slot in slots if slot["need"] == need and slot["status"] == "source"]
@@ -306,18 +359,23 @@ def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
     steps = assembly_steps(spec, slots, drawer, held_out)
     notes = [f"{hit['project_name']} ({'example, ' if hit.get('seeded') else ''}{hit.get('outcome', 'planned')}): {hit['note']}"
              for hit in memory[:2] if hit.get("project_name") and hit.get("note")]
-    return {"from_your_drawer": drawer, "to_source": shopping, "drawer_score": score,
-            "steps": steps, "memory_notes": notes, "allocations": slots, "held_out": held_out}
+    return {"from_your_drawer": drawer, "to_source": _with_alternatives(shopping, slots, components),
+            "drawer_score": score, "steps": steps, "memory_notes": notes, "allocations": slots, "held_out": held_out}
 
 
 def with_allocations(saved: dict, spec: dict, items: list[dict]) -> dict:
-    """Rebuild missing or outdated light assignments using the original reviewed inventory."""
+    """Refresh suggestions against stored allocations, or rebuild missing/outdated light assignments."""
     def light_assignments(slots):
         return Counter((u["need"], u.get("part_id")) for u in slots if u.get("need") in LIGHT_NEEDS)
 
     previous = saved.get("allocations")
     if isinstance(previous, list) and light_assignments(previous) == light_assignments(required_units(spec)):
-        return saved
+        shopping = saved.get("to_source", [])
+        components, _ = _donor_components(items)
+        held = {row["item_index"] for row in saved.get("held_out", [])}
+        available = [offer for offer in components if offer[0]["item_index"] not in held]
+        refreshed = _with_alternatives(shopping, previous, available)
+        return saved if refreshed == shopping else {**saved, "to_source": refreshed}
     return {**build_plan(spec, items, []), "memory_notes": saved.get("memory_notes", [])}
 
 

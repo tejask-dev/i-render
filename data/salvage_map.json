@@ -25,6 +25,10 @@
   "loose_motor": {"display":"Loose geared DC motor","parts":{"dc_motor":1},"tools":[],"how":"Read the motor and gearbox markings. Verify voltage, stall current, shaft size and mounting clearance against the driver and CAD mount."},
   "loose_wheel": {"display":"Loose toy wheel","parts":{"wheel":1},"tools":[],"how":"Measure the wheel diameter and hub against the selected axle and model."},
   "loose_led": {"display":"Loose indicator LED","parts":{"led":1},"tools":[],"how":"Identify the low-current LED rating and polarity. Size the current-limiting resistor for the intended supply."},
+  "loose_stepper_motor": {"display":"Loose stepper motor","parts":{"stepper_motor":1},"tools":[],"how":"Use an intact, identified motor. Check its winding ratings, driver requirements, shaft and mounting dimensions."},
+  "loose_rgb_led": {"display":"Loose discrete RGB LED","parts":{"rgb_led":1},"tools":[],"how":"Identify the pinout and common lead. Check the forward voltage and current rating of the chosen colour channel."},
+  "loose_piezo": {"display":"Loose passive piezo sounder","parts":{"piezo":1},"tools":[],"how":"Verify the sounder is passive and check its rated drive voltage and frequency range."},
+  "loose_vibration_motor": {"display":"Loose eccentric vibration motor","parts":{"vibration_motor":1},"tools":[],"how":"Use an intact, identified motor. Verify the rated voltage and current and check clearance around the eccentric weight."},
   "never_salvage": {
     "mains_power_supply":"Mains power supply (leave closed)",
     "microwave":"Microwave",
