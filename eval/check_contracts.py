@@ -13,6 +13,7 @@ from backend import cad, main, salvage, store
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "prompts" / "schemas"
 DRAFT = "https://json-schema.org/draft/2020-12/schema"
+CONTRACTS = ("project_brief", "robot_spec", "inventory", "build_plan")
 
 
 def model_contracts(write):
@@ -30,15 +31,16 @@ def model_contracts(write):
             raise ValueError(f"{path.name} differs from {model.__name__}. Regenerate with --write-models.")
 
 
-def check():
+def load_validator(name):
     from jsonschema import Draft202012Validator
 
-    validators = {}
-    for name in ("project_brief", "robot_spec", "inventory", "build_plan"):
-        schema = json.loads((SCHEMAS / (name + ".json")).read_text())
-        Draft202012Validator.check_schema(schema)
-        validators[name] = Draft202012Validator(schema)
+    schema = json.loads((SCHEMAS / (name + ".json")).read_text())
+    Draft202012Validator.check_schema(schema)
+    return Draft202012Validator(schema)
 
+
+def check():
+    validators = {name: load_validator(name) for name in CONTRACTS}
     with tempfile.TemporaryDirectory() as folder, patch.object(store, "STATE", Path(folder)):
         with ZipFile(ROOT / "demo" / "Snack-Scout-backup.zip") as archive:
             (store.STATE / "rendi.sqlite3").write_bytes(archive.read("rendi.sqlite3"))
@@ -64,8 +66,22 @@ def check():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--write-models", action="store_true", help="Regenerate only the two Python model exports.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--write-models", action="store_true", help="Regenerate the two Python model exports.")
+    mode.add_argument("--validate", nargs=2, metavar=("CONTRACT", "FILE"), help="Check a single normalized JSON payload.")
     args = parser.parse_args()
-    model_contracts(args.write_models)
-    if not args.write_models:
-        check()
+    if args.validate:
+        name, filename = args.validate
+        if name not in CONTRACTS:
+            parser.error("Choose a contract from " + ", ".join(CONTRACTS))
+        payload = json.loads(Path(filename).read_text())
+        load_validator(name).validate(payload)
+        if name == "robot_spec":
+            cad.RobotSpec.model_validate(payload)
+        elif name == "project_brief":
+            main.Brief.model_validate(payload)
+        print(f"PASS: {filename} matches {name}.")
+    else:
+        model_contracts(args.write_models)
+        if not args.write_models:
+            check()

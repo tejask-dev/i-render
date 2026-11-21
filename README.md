@@ -46,6 +46,18 @@ SQLite stores briefs, plans, recognition results and saved projects under `.var/
 
 After changing the Python brief or robot model, regenerate its exported contract with `.venv/bin/python -m eval.check_contracts --write-models`. To check all four contracts against the portable notebook and fresh manual plans, run `uv run --no-project --python .venv/bin/python --with jsonschema python -m eval.check_contracts`. The validator is a development dependency.
 
+To check your own robot, save the `spec` object from the sketch response as `robot.json` and run the command below. You can substitute any contract name from the table using its filename without the `.json` extension. For donor boxes and component joins, the running workbench also checks relationships between values. Raw vision detections are an intermediate format that the backend converts before returning a response.
+
+```sh
+uv run --no-project --python .venv/bin/python --with jsonschema python -m eval.check_contracts --validate robot_spec robot.json
+```
+
+### Editing the example memories
+
+Open [seed_projects.json](data/seed_projects.json). Each top-level key is a stable example ID. Keep the key when renaming an existing example. Each record needs four nonempty text fields. Use `project_name` for the display name, `note` for what Rendi recalls, `outcome` for the result, and `keywords` for space-separated search terms.
+
+Run `.venv/bin/python -m eval.check_seed_projects` before restarting. It checks your file in a temporary notebook. Invalid JSON or missing fields prevent the server from starting. After the check passes, press Control-C in the terminal running the workbench, then double-click **Start Demo.command**. Opening the launcher while the server is still running reuses that server. Search the notebook for one of your keywords to see the updated example. Removing a key retires that example on the next startup. Your saved builds retain their notes.
+
 ## Verification
 
 `python -m backend.check_cad` checks the CAD solids with the project environment active. `python -m backend.salvage` checks the component counts. The end-to-end check writes an Eval Rover into the notebook it runs against, so it defaults to a rehearsal server on port 8768 and exits before writing if the server reports `demo_store: true`. Start the rehearsal server in one terminal:

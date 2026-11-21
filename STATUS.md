@@ -4,7 +4,7 @@ Open **Start Demo.command**, then open Snack Scout. Select **Wheel 4**. The insp
 
 ## What the team can show
 
-Zlata can now check prompt outputs against the four shared data contracts and edit the two notebook examples in JSON. Saved projects keep their own notes. [Payloads and verification command](README.md#shared-data-contracts) · [Example project data](data/seed_projects.json)
+Zlata can validate a sketch, inventory or plan response against the shared data contracts and edit the two notebook examples in JSON. [Payloads and verification command](README.md#shared-data-contracts) · [How to edit and reload example memories](README.md#editing-the-example-memories)
 
 | Evidence | Observed result |
 | --- | --- |
