@@ -1,6 +1,6 @@
 # I, Render
 
-**Saved Devpost draft:** [Edit the team entry](https://devpost.com/submit-to/31536-hack-western-13/manage/submissions/1315044-i-render/project_details/edit). Created November 21 under Tejass's account, `tejas-teaches`. The story, technology tags, public repository link, demo-recording link and Snack Scout screenshot are saved; the entry is **not submitted**. Team membership, hacker IDs, schools, prize selections and the required AI-disclosure fields still need final review and saving. The recording is linked from GitHub; an embedded YouTube/Vimeo video is optional.
+**Saved Devpost draft:** [Edit the team entry](https://devpost.com/submit-to/31536-hack-western-13/manage/submissions/1315044-i-render/project_details/edit). Created November 21 under Tejass's account, `tejas-teaches`. The story, technology tags, public repository link, demo-recording link, Snack Scout screenshot and additional information are saved; the draft is **4/5 steps complete and not submitted**. All three teammates attend Western University, as confirmed by Tejass. The saved AI disclosure distinguishes the local runtime from unactivated cloud adapters. Team membership, remaining hacker ID and prize selections still need final review before submission. The recording is linked from GitHub; an embedded YouTube/Vimeo video is optional.
 
 **One-line pitch**
 
@@ -38,7 +38,7 @@ Zlata prepared the product and feature specifications. Brian planned the voice s
 
 - [ ] Join the existing team entry rather than creating another. Collect each teammate's three-word hacker ID and school. Keep the secret team invite link private.
 - [x] Publish the source repository with Tejass's approval. [The public repository](https://github.com/tejask-dev/i-render) was verified without authentication. A private URL or uploaded ZIP would not satisfy Devpost's requirement.
-- [ ] Save the required AI-tool selections and implementation disclosure: OpenAI, Anthropic and Other (local Qwen through Ollama). Describe the local runtime and distinguish mocked adapters from live provider use.
+- [x] Save the required AI-tool selections and implementation disclosure: OpenAI, Anthropic and Other (local Qwen through Ollama). The saved text describes the local runtime and distinguishes mocked adapters from live provider use.
 - [ ] Confirm the final roster, each person’s contributions and any on-site test results with Brian and Tejass.
 - [ ] Review the 79-second recording. It is an automated run of the real interface, uses fresh on-device recognition with shortened waits and shows a saved, planned build. Use the actual uploaded video URL if adding it to Devpost. [Local walkthrough](demo/I-Render-walkthrough.mp4)
 - [ ] Use the working demo for overall judging. Consider Most Adventurous for helping people discover a use for old hardware. Select a sponsor track only after the team can demonstrate its actual requirements. Match the final roster and track selections on the live site and Devpost. [Prize descriptions](https://hack-western-13.devpost.com/#prizes)
