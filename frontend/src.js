@@ -1,6 +1,7 @@
 import "@fontsource-variable/bricolage-grotesque/wght.css";
 import "@fontsource-variable/dm-sans/wght.css";
 import "./style.css";
+import { createVoiceOutput } from "./voice.js";
 import { spokenCentimeters, spokenVibe } from "./dictation.js";
 import {
   icon,
@@ -59,9 +60,14 @@ const ranks = {
   inventory: 3,
   result: 4,
 };
-const voiceCapable = Boolean(window.speechSynthesis);
+let voiceNotice = "";
+const output = createVoiceOutput((text) => {
+  voiceNotice = text;
+  message(s.error || configProblem || text);
+});
+const cloudVoiceAvailable = () => Boolean(config.elevenlabs_voice_available && window.Audio);
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let voiceOn = voiceCapable;
+let voiceProvider = "browser", voiceOn = output.browserAvailable;
 const $ = (selector) => app.querySelector(selector);
 const btn = (label, act, cls = "primary", glyph = "arrow-right") =>
   `<button type="button" class="${cls}" data-action="${act}">${esc(label)}${glyph ? icon(glyph) : ""}</button>`;
@@ -86,17 +92,27 @@ const savedIndex = () => {
 const explicitMemory = (hit) =>
   `<li><span class="source-tag">${hit.seeded ? "Example memory" : "Saved project"}</span><strong>${hit.project_id ? `<a href="/project/${encodeURIComponent(hit.project_id)}">${esc(hit.project_name)}</a>` : esc(hit.project_name)}</strong><p>${esc(hit.note || pretty(hit.outcome))}</p></li>`;
 function say(line) {
-  if (voiceOn && voiceCapable) {
-    speechSynthesis.cancel();
-    const voice = new SpeechSynthesisUtterance(line);
-    const localVoice = speechSynthesis
-      .getVoices()
-      .find((v) => v.localService && v.lang.startsWith("en"));
-    if (localVoice) voice.voice = localVoice;
-    voice.rate = 1;
-    voice.pitch = 1.08;
-    speechSynthesis.speak(voice);
-  }
+  if (!voiceOn || recording || recognition) return;
+  clearVoiceNotice();
+  output.say(line, voiceProvider);
+}
+function clearVoiceNotice() {
+  if (voiceNotice) message(s.error || configProblem);
+  voiceNotice = "";
+}
+function voicePrompt() {
+  return s.stage === "interview" ? question() : "Hey, I’m Rendi. Let’s make a robot!";
+}
+function updateVoiceButton() {
+  const button = $('[data-action="voice"]');
+  button.disabled = voiceProvider === "browser" ? !output.browserAvailable : !cloudVoiceAvailable();
+  button.setAttribute("aria-pressed", String(voiceOn));
+  button.innerHTML = icon(voiceOn ? "volume-2" : "volume-x") + ` <span>Voice ${voiceOn ? "on" : "off"}</span>`;
+}
+function voiceControls() {
+  const option = (value, name, available) =>
+    `<option value="${value}" ${available ? "" : "disabled"} ${voiceProvider === value ? "selected" : ""}>${name}${available ? "" : " (unavailable)"}</option>`;
+  return `<div class="voice-controls"><button class="sound" data-action="voice"></button><details class="voice-settings"><summary class="sound" aria-label="Voice output" title="Voice output">${icon("settings-2")} <span>Voice output</span></summary><div class="voice-panel"><label for="voice-provider">Rendi’s voice output</label><small id="voice-disclosure">Sends Rendi’s spoken text to ElevenLabs when selected. Replies may include your answers.</small><select id="voice-provider" aria-describedby="voice-disclosure">${option("browser", "Browser voice", output.browserAvailable)}${option("elevenlabs", "ElevenLabs", cloudVoiceAvailable())}</select></div></details></div>`;
 }
 function message(text) {
   const el = $("#notice");
@@ -111,6 +127,8 @@ function clearDraft() {
   s = defaults();
 }
 function goto(stage) {
+  output.stop();
+  voiceNotice = "";
   s.stage = stage;
   s.error = "";
   render();
@@ -463,7 +481,8 @@ function render() {
     result,
     notebook,
   };
-  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I, Render home">${drop}<span>I, Render<span class="brand-period">.</span></span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav><button class="sound" data-action="voice" aria-pressed="${voiceOn}" ${voiceCapable ? "" : "disabled"}>${icon(voiceOn ? "volume-2" : "volume-x")} <span>Voice ${voiceOn ? "on" : "off"}</span></button></div></header><main id="work" tabindex="-1">${progress()}<div id="notice" role="alert" ${s.error || configProblem ? "" : "hidden"}>${esc(s.error || configProblem)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I, Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I, Render home">${drop}<span>I, Render<span class="brand-period">.</span></span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I, Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  updateVoiceButton();
   if (s.stage === "model" || s.stage === "result") {
     const id = s.selectedPart || s.model.spec.parts[0]?.id;
     selectPart(id);
@@ -529,6 +548,7 @@ async function runSketch(template) {
   );
 }
 async function loadProject(id) {
+  output.stop();
   await job("Opening your saved build…", async () => {
     const project = await request("/projects/" + encodeURIComponent(id));
     clearDraft();
@@ -618,7 +638,7 @@ async function deviceDictation() {
     if (label) label.textContent = text;
   };
   try {
-    if (voiceCapable) speechSynthesis.cancel();
+    output.stop();
     status("Opening microphone…");
     session.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     if (recording !== session) {
@@ -707,7 +727,7 @@ function dictation() {
     originalValue = answerField()?.value;
   const el = $('[data-action="dictate"] span');
   if (el) el.textContent = "Listening… tap to stop";
-  if (voiceCapable) speechSynthesis.cancel();
+  output.stop();
   r.onresult = (e) => {
     if (recognition === r && s.stage === stage && s.slot === slot)
       acceptTranscript(e.results[0][0].transcript.trim(), originalValue);
@@ -888,6 +908,15 @@ function spokenInventory() {
 }
 app.addEventListener("change", (e) => {
   if (e.target.type === "file") pickFile(e.target);
+  if (e.target.id === "voice-provider") {
+    const provider = e.target.value;
+    if (!["browser", "elevenlabs"].includes(provider) || e.target.selectedOptions[0]?.disabled) return;
+    output.stop();
+    voiceProvider = provider;
+    clearVoiceNotice();
+    updateVoiceButton();
+    if (!s.busy) say(voicePrompt());
+  }
 });
 app.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -956,7 +985,7 @@ app.addEventListener("submit", async (e) => {
 });
 app.addEventListener("click", async (e) => {
   const t = e.target.closest("button");
-  if (!t || t.disabled || s.busy) return;
+  if (!t || t.disabled || (s.busy && t.dataset.action !== "voice")) return;
   if (t.dataset.example) {
     chooseExample(t.dataset.example);
     return;
@@ -1024,16 +1053,11 @@ app.addEventListener("click", async (e) => {
   }
   switch (t.dataset.action) {
     case "voice":
-      capture();
       voiceOn = !voiceOn;
-      if (!voiceOn) speechSynthesis.cancel();
-      render();
-      if (voiceOn)
-        say(
-          s.stage === "interview"
-            ? question()
-            : "Hey, I’m Rendi. Let’s make a robot!",
-        );
+      clearVoiceNotice();
+      updateVoiceButton();
+      if (voiceOn) say(voicePrompt());
+      else output.stop();
       break;
     case "dictate":
       dictation();
@@ -1183,6 +1207,7 @@ async function boot() {
   }
   render();
 }
+window.addEventListener("pagehide", output.stop);
 window.addEventListener("pagehide", cancelRecording);
 window.addEventListener("pagehide", closeCamera);
 window.addEventListener("hashchange", () => {

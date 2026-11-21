@@ -1,18 +1,69 @@
-"""Short, opt-in dictation with a locally installed Whisper model."""
+"""Short local dictation and opt-in ElevenLabs narration."""
 
 import asyncio
+import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
 
+import httpx
 from fastapi import HTTPException
 
 MODEL = Path.home() / ".cache" / "whisper" / "base.en.pt"
 GATE = asyncio.Semaphore(1)
+NARRATION_GATE = asyncio.Lock()
+MAX_MP3_BYTES = 2 * 1024 * 1024
+NARRATION_TIMEOUT = 20
 
 
 def available():
     return bool(MODEL.is_file() and shutil.which("whisper") and shutil.which("ffmpeg"))
+
+
+def elevenlabs_settings():
+    key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+    voice = os.environ.get("ELEVENLABS_VOICE_ID", "").strip()
+    if not re.fullmatch(r"[!-~]+", key) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", voice):
+        return None
+    model = os.environ.get("ELEVENLABS_MODEL", "").strip() or "eleven_multilingual_v2"
+    return key, voice, model
+
+
+async def synthesize(text):
+    settings = elevenlabs_settings()
+    if settings is None:
+        raise HTTPException(503, "ElevenLabs voice is unavailable. Choose the Mac voice.")
+    if NARRATION_GATE.locked():
+        raise HTTPException(429, "Another narration is in progress. Try again in a moment.")
+    key, voice, model = settings
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice}"
+    headers = {"xi-api-key": key, "Accept": "audio/mpeg", "Accept-Encoding": "identity"}
+    try:
+        async with NARRATION_GATE, asyncio.timeout(NARRATION_TIMEOUT), httpx.AsyncClient(
+            timeout=NARRATION_TIMEOUT, trust_env=False, follow_redirects=False
+        ) as client:
+            async with client.stream("POST", url, params={"output_format": "mp3_44100_128"},
+                                     headers=headers, json={"text": text, "model_id": model}) as response:
+                if response.status_code == 429:
+                    raise HTTPException(429, "ElevenLabs is busy. Try again later or choose the Mac voice.")
+                if response.status_code != 200:
+                    raise HTTPException(502, "ElevenLabs could not generate narration. Choose the Mac voice or retry.")
+                mime = response.headers.get("content-type", "").partition(";")[0].strip().lower()
+                if mime != "audio/mpeg" or response.headers.get("content-encoding", "identity").lower() != "identity":
+                    raise HTTPException(502, "ElevenLabs returned an unexpected audio format.")
+                audio = bytearray()
+                async for chunk in response.aiter_raw():
+                    if len(audio) + len(chunk) > MAX_MP3_BYTES:
+                        raise HTTPException(502, "The generated narration was too large.")
+                    audio.extend(chunk)
+                if not audio:
+                    raise HTTPException(502, "ElevenLabs returned empty audio.")
+                return bytes(audio)
+    except (TimeoutError, httpx.TimeoutException):
+        raise HTTPException(504, "Narration timed out. Choose the Mac voice or retry.") from None
+    except httpx.RequestError:
+        raise HTTPException(502, "Could not reach ElevenLabs. Choose the Mac voice or retry.") from None
 
 
 async def run(*command, data=None, timeout=30):

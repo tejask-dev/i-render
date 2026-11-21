@@ -223,6 +223,47 @@ nav {
 .text-btn:hover {
   color: var(--orange);
 }
+.voice-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.voice-settings {
+  position: relative;
+}
+.voice-settings summary {
+  cursor: pointer;
+  list-style: none;
+}
+.voice-settings summary::-webkit-details-marker {
+  display: none;
+}
+.voice-settings svg {
+  width: 1.13em;
+  height: 1.13em;
+}
+.voice-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 4;
+  display: grid;
+  gap: 0.55rem;
+  width: min(17rem, 80vw);
+  padding: 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 3px 12px #0002;
+}
+.voice-panel select {
+  color: var(--ink);
+  background: var(--paper);
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
 main {
   padding-top: clamp(25px, 4.5vw, 60px);
   padding-bottom: clamp(45px, 6.5vw, 85px);
@@ -1134,6 +1175,9 @@ details li {
   margin: 0 0 1rem;
 }
 @media (max-width: 900px) {
+  .voice-settings summary span {
+    display: none;
+  }
   .topbar {
     min-height: 70px;
   }
@@ -1339,14 +1383,16 @@ details li {
     justify-self: start;
   }
 }
+@media (max-width: 420px) {
+  .nav-btn svg {
+    display: none;
+  }
+}
 @media (max-width: 380px) {
   .topbar,
   main,
   footer {
     padding-inline: 13px;
-  }
-  .nav-btn svg {
-    display: none;
   }
   .topbar {
     gap: 12px;
@@ -1359,6 +1405,18 @@ details li {
   }
   .progress li {
     font-size: 0.67rem;
+  }
+}
+@media (max-width: 365px) {
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding-top: 6px;
+  }
+  .topbar nav {
+    order: 1;
+    width: 100%;
+    height: 36px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

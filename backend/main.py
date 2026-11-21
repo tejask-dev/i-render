@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, ValidationError
 from starlette.concurrency import run_in_threadpool
@@ -101,6 +101,10 @@ class SaveRequest(BaseModel):
     outcome: Literal["planned"] = "planned"
 
 
+class SpeakRequest(BaseModel):
+    text: Annotated[str, StringConstraints(min_length=1, max_length=1200, pattern=r"\S")]
+
+
 @app.get("/api/config")
 async def config():
     source = await vision.vision_source()
@@ -109,6 +113,7 @@ async def config():
         "vision_providers": {"local": bool(source), "gemini": bool(os.environ.get("GEMINI_API_KEY", "").strip())},
         "vision_source": source,
         "local_voice_available": speech.available(),
+        "elevenlabs_voice_available": speech.elevenlabs_settings() is not None,
         "notebook_id": hashlib.sha256(os.fsencode(store.STATE)).hexdigest()[:16],
         "demo_store": store.STATE == (store.ROOT / ".var" / "workbench").resolve(),
         "templates": [
@@ -121,6 +126,12 @@ async def config():
 @app.post("/api/transcribe")
 async def transcribe(audio: Annotated[UploadFile, File()]):
     return {"text": await speech.transcribe(await audio.read(2 * 1024 * 1024 + 1))}
+
+
+@app.post("/api/speak", response_class=Response, responses={200: {"content": {"audio/mpeg": {}}}})
+async def speak(request: SpeakRequest):
+    audio = await speech.synthesize(request.text.strip())
+    return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/brief", status_code=201)
