@@ -93,7 +93,7 @@ if __name__ == "__main__":
                    "wheel-2": ("wheel_right", 0), "led-1": ("eye_left", 1)}, got
     lacking = {u["unit"]: u["part_id"] for u in plan["allocations"] if u["status"] == "source"}
     assert lacking == {"dc_motor-2": "mount_right", "led-2": "eye_right", "motor_driver-1": None,
-                       "battery_pack-1": None, "resistor_220-1": None, "resistor_220-2": None}, lacking
+                       "battery_pack-1": None, "resistor_220-1": "eye_left", "resistor_220-2": "eye_right"}, lacking
     assert plan["drawer_score"] == 40 and len(got) == 4 and len(plan["allocations"]) == 10
     text = " ".join(plan["steps"])
     assert all(word in text for word in ("drawer item 1 (RC car)", "Left motor mount", "drawer item 2 (AA flashlight)",
@@ -109,6 +109,14 @@ if __name__ == "__main__":
     assert [u["part_id"] for u in blob["allocations"] if u["need"] == "led"] == ["belly_light", None]
     assert blob["drawer_score"] == 0 and blob["from_your_drawer"] == [] and len(blob["steps"]) >= 5
     print("PASS function-level electronics where the model names no holder; empty drawer stays honest")
+
+    visible_eyes = [{"id": f"eye_{n}", "label": f"Eye {n}", "primitive": "sphere", "category": "decor"}
+                    for n in (5, 6, 7)]
+    eye_ids = [part["id"] for part in visible_eyes]
+    eye_spec = {"functions": [{"name": "light_up", "parts": eye_ids}], "parts": visible_eyes}
+    eye_plan = check_invariants(eye_spec, salvage.manual_inventory(["loose_led"] * 3), stricter=True)
+    assert eye_plan["drawer_score"] == 50 and eye_plan["to_source"][0]["part_ids"] == eye_ids
+    assert [row["part_ids"] for row in eye_plan["from_your_drawer"]] == [[part_id] for part_id in eye_ids]
 
     shared = check_invariants({"functions": [{"name": n} for n in ("drive", "walk", "fly_ish", "grab")]}, [])
     packs = [u for u in shared["allocations"] if u["need"] == "battery_pack"]

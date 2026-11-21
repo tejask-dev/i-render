@@ -20,7 +20,7 @@ The recorded workflow runs on a Mac. Qwen3-VL reads the images through Ollama. A
 
 ## The challenge
 
-A drawing shows a front view. It gives few clues about depth, hidden joints or axle diameters. We kept those assumptions visible and made each part inspectable. A similar problem appeared in the drawer scan. Recognizing a toy car tells us where to look for wheels. Only a physical inspection can establish that the wheels fit or the motor works.
+A single drawing gives few clues about depth, hidden joints or axle diameters. We kept those assumptions visible and made each part inspectable. A similar problem appeared in the drawer scan. Recognizing a toy car tells us where to look for wheels. Only a physical inspection can establish that the wheels fit or the motor works.
 
 ## What we’re proud of and what’s next
 

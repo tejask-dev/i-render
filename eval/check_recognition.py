@@ -5,6 +5,7 @@ Run from the repository root with .venv/bin/python -m eval.check_recognition.
 
 import asyncio
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -13,6 +14,46 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import httpx
+import numpy as np
+import trimesh
+from PIL import Image, ImageDraw
+
+
+def check_photo_orientation(directory):
+    from backend import cad, vision
+
+    paper = Image.new("L", (100, 100), "white")
+    ImageDraw.Draw(paper).line((35, 78, 78, 33), fill="black", width=3)
+    encoded = io.BytesIO()
+    paper.save(encoded, "PNG")
+    # The light is to the right of the base. The ink link and the pivot chain rise to the right.
+    parts = [("base", [100, 780, 600, 900]), ("light", [480, 680, 560, 780]),
+             ("arm", [330, 300, 810, 810])]
+    for hinges in ([], [("joint", [500, 560, 570, 630]), ("gripper", [780, 250, 850, 330])]):
+        boxes = [{"role": role, "box_2d": box} for role, box in parts + hinges]
+        raw = vision._from_boxes({"parts": boxes, "confidence": .95}, {"approx_size_cm": 20}, encoded.getvalue())
+        cad.export_model(cad.RobotSpec.model_validate(raw), 20, directory)
+        meshes = trimesh.load(directory / "model.glb", force="scene").geometry
+        assert meshes["light_2"].bounds[:, 0].mean() > meshes["base_1"].bounds[:, 0].mean()
+        arms = [mesh for name, mesh in meshes.items() if name.startswith("arm_")]
+        assert len(arms) == (2 if hinges else 1)
+        assert all(np.cov(mesh.vertices[:, :2].T)[0, 1] > 0 for mesh in arms)
+
+    # The near wheel shows an oval hub. The narrow tread retains its across-body axle.
+    boxes = [{"role": role, "box_2d": rect} for role, rect in (
+        ("body_box", [220, 300, 830, 680]), ("wheel", [290, 630, 470, 840]),
+        ("wheel", [765, 620, 825, 850]))]
+    raw = vision._from_boxes({"parts": boxes, "confidence": .95}, {"approx_size_cm": 20}, encoded.getvalue())
+    cad.export_model(cad.RobotSpec.model_validate(raw), 20, directory)
+    meshes = trimesh.load(directory / "model.glb", force="scene").geometry
+    assert set(meshes) == {"body_box_1", "wheel_2", "wheel_3"}
+    body, face, tread = (trimesh.Trimesh(vertices=meshes[k].vertices, faces=meshes[k].faces)
+                         for k in ("body_box_1", "wheel_2", "wheel_3"))
+    assert np.isclose(face.extents[0], face.extents[1]) and face.extents[2] < .3 * face.extents[1]
+    assert face.bounds[1, 2] > body.bounds[1, 2] > face.bounds[0, 2]
+    assert np.isclose(tread.extents[2], tread.extents[1]) and tread.extents[0] < .3 * tread.extents[1]
+    assert all(trimesh.boolean.intersection([body, wheel], engine="manifold").volume > 0
+               for wheel in (face, tread))
 
 
 async def check(directory):
@@ -20,6 +61,7 @@ async def check(directory):
     from backend.templates import TEMPLATES
 
     store.initialize()
+    check_photo_orientation(directory / "orientation")
     prompts = directory / "prompts"
     shutil.copytree(vision.PROMPTS, prompts)
     copied_prompt = prompts / "local_sketch_parts.md"

@@ -283,7 +283,7 @@ def _from_boxes(raw, brief, image):
         l, t, r, b = p["box_2d"]
         normalized.append({"role": p["role"], "box_2d": [t, l, b, r]})
     parts = normalized
-    assumptions = ["Front-view boxes come from local image recognition.", "Depth, joints and hidden surfaces are estimates.",
+    assumptions = ["Part outlines come from the photographed view.", "Depth, joints and hidden surfaces are estimates.",
                    "Height follows the interview request."]
     arms = [p for p in parts if p["role"] == "arm"]
     joints = [p["box_2d"] for p in parts if p["role"] == "joint"]
@@ -339,18 +339,33 @@ def _from_boxes(raw, brief, image):
     while pending := structure - parents.keys():
         child, parent = min(((c, a) for c in sorted(pending) for a in parents), key=separation)
         parents[child] = parent
+    def front_surface(i):
+        t, l, b, r = boxes[i]
+        width, height = (r-l) * x_scale, (b-t) * z_scale
+        return (width + height) / 4 if parts[i]["role"].endswith("round") else min(width, height) * .325
+
     result = []
+    face_on_wheel = False
     for i, p in enumerate(parts):
         role, (t, l, b, r) = p["role"], boxes[i]
         width, height = max(2, (r - l) * x_scale), max(2, (b - t) * z_scale)
         depth = max(2, min(width, height) * 0.65)
         primitive, dims, category = "rounded_box", [width, depth, height], "structure"
         parent = parents.get(i, head if role in {"eye", "light", "antenna"} else trunk)
-        front_offset, angle = 0, 0
+        front_offset, angle, yaw = 0, 0, 0
         if role in {"body_round", "head_round"}:
             primitive, dims = "sphere", [(width + height) / 2]
         elif role == "wheel":
-            primitive, dims, category = "wheel", [max(10, height), min(60, max(3, width * 0.5))], "motion"
+            diameter = max(10, height)
+            thickness = min(60, max(3, width * .5))
+            # A roughly circular projection shows a hub face; a narrow projection shows tread.
+            if .65 <= width / height <= 1.55:
+                face_on_wheel = True
+                yaw = 90
+                thickness = min(60, max(3, diameter * .22))
+                if parent is not None and parts[parent]["role"] in {"base", "body_box", "body_round"}:
+                    front_offset = front_surface(parent) + thickness / 2 - min(2, thickness / 2)
+            primitive, dims, category = "wheel", [diameter, thickness], "motion"
         elif role == "arm":
             if "pivot_span" in p:
                 (y1, x1), (y2, x2), thick = p["pivot_span"]
@@ -359,6 +374,7 @@ def _from_boxes(raw, brief, image):
                 angle = round(math.degrees(math.atan2(dy, dx)), 1)
             else:
                 dims, angle = _link_geometry(gray, boxes[i], z_scale*1000/gray.shape[0])
+            angle = -angle  # Image-right is robot-left, so the link's tilt about Y also reverses.
             primitive, category = "arm_link", "motion"
         elif role in {"joint", "gripper", "leg"}:
             category = "motion"
@@ -368,17 +384,15 @@ def _from_boxes(raw, brief, image):
             primitive, dims, category = "antenna", [max(5, min(150, height))], "decor"
         elif role in {"eye", "light"}:
             primitive, dims, category = "sphere", [min(width, height)], "light" if role == "light" else "decor"
-            pt, pl, pb, pr = boxes[parent if parent is not None else trunk]
-            pw, ph = (pr - pl) * x_scale, (pb - pt) * z_scale
-            front_offset = (pw + ph) / 4 if parts[parent if parent is not None else trunk]["role"].endswith("round") else min(pw, ph) * 0.325
+            front_offset = front_surface(parent if parent is not None else trunk)
         elif role == "accessory":
             category = "decor"
         result.append({
             "id": ids[i], "label": role.replace("_", " ").title() + f" {i+1}", "primitive": primitive,
             "dims_mm": [round(n, 1) for n in dims],
-            "pos_mm": [round(((l + r) / 2 - mid_x) * x_scale, 1), round(front_offset, 1),
+            "pos_mm": [round((mid_x - (l + r) / 2) * x_scale, 1), round(front_offset, 1),
                        round((bottom - (t + b) / 2) * z_scale, 1)],
-            "rot_deg": [0, angle, 0], "attach_to": None if parent is None else ids[parent],
+            "rot_deg": [0, angle, yaw], "attach_to": None if parent is None else ids[parent],
             "category": category, "function": None,
         })
     role_map = {"drive": ["wheel"], "walk": ["leg"], "light_up": ["light", "eye"], "grab": ["arm", "gripper"],
@@ -389,6 +403,8 @@ def _from_boxes(raw, brief, image):
             names.append(name)
     functions = [{"name": name, "parts": [ids[i] for i, p in enumerate(parts) if p["role"] in role_map.get(name, [])]}
                  for name in names]
+    if face_on_wheel:
+        assumptions[0] = "Outlines follow the photo. Round wheels face the camera. Tire thickness and axle placement are estimates."
     if any(p["role"] == "wheel" for p in parts):
         assumptions.append("Wheel bores are modelled at 5 mm. Measure the actual donor axle before printing.")
     if "grab" in names and any(p["role"] == "arm" for p in parts):

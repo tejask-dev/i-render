@@ -36,7 +36,8 @@ BLOCK_NOTE = "Excluded from salvage. Leave this item intact."
 SHARED = {"microcontroller", "battery_pack"}
 # Mesh parts built to hold one component. Needs without a host stay function-level electronics.
 HOST_PRIMITIVE = {"wheel": "wheel", "dc_motor": "motor_mount", "servo": "servo_mount"}
-HOST_CATEGORY = {"led": "light", "speaker": "sound", "ultrasonic_sensor": "sensor"}
+HOST_CATEGORY = {"speaker": "sound", "ultrasonic_sensor": "sensor"}
+LIGHT_NEEDS = {"led", "resistor_220"}
 NAMES = {"dc_motor": "DC motor", "led": "LED", "resistor_220": "current-limiting resistor",
          "audio_amp": "audio amplifier", "fly_ish": "airflow display"}
 DETACHED_CHECK = {
@@ -104,6 +105,13 @@ def _join(words):
 
 
 def _holds(need, part):
+    if need in LIGHT_NEEDS:
+        if part.get("category") == "light":
+            return True
+        # Local sketch recognition represents eyes as decorative spheres, even when light_up names them.
+        name = f"{part['id']} {part.get('label', '')}".lower()
+        return (part.get("category") == "decor" and part.get("primitive") == "sphere"
+                and "eye" in re.findall(r"[a-z]+", name))
     return (need in HOST_PRIMITIVE and part.get("primitive") == HOST_PRIMITIVE[need]) or (
         need in HOST_CATEGORY and part.get("category") == HOST_CATEGORY[need])
 
@@ -121,7 +129,10 @@ def required_units(spec: dict) -> list[dict]:
         slot.update(part_id=part_id, part_label=parts[part_id].get("label") or part_id)
 
     for name, ids in listed.items():
+        lights = sum(_holds("led", parts[i]) for i in set(ids) if i in parts) if name == "light_up" else 0
         for need, qty in REQUIREMENTS[name].items():
+            if name == "light_up" and need in LIGHT_NEEDS:
+                qty = max(qty, lights)
             if name == "drive" and need == "wheel":
                 qty = max(qty, sum(part.get("primitive") == "wheel" for part in parts.values()))
             if need in SHARED:
@@ -300,8 +311,12 @@ def build_plan(spec: dict, items: list[dict], memory: list[dict]) -> dict:
 
 
 def with_allocations(saved: dict, spec: dict, items: list[dict]) -> dict:
-    """Give a plan saved before per-unit joins its allocations, keeping the saved memory notes."""
-    if isinstance(saved.get("allocations"), list):
+    """Rebuild missing or outdated light assignments using the original reviewed inventory."""
+    def light_assignments(slots):
+        return Counter((u["need"], u.get("part_id")) for u in slots if u.get("need") in LIGHT_NEEDS)
+
+    previous = saved.get("allocations")
+    if isinstance(previous, list) and light_assignments(previous) == light_assignments(required_units(spec)):
         return saved
     return {**build_plan(spec, items, []), "memory_notes": saved.get("memory_notes", [])}
 
@@ -342,3 +357,20 @@ if __name__ == "__main__":
     assert [h["item_index"] for h in joined["held_out"] if h["blocked"]] == [2, 4]
     assert 5 <= len(joined["steps"]) <= 8 and "Microwave" in " ".join(joined["steps"])
     assert with_allocations({"memory_notes": ["kept"]}, rover, one)["memory_notes"] == ["kept"]
+
+
+    lamps = [{"id": f"eye_{n}", "primitive": "sphere", "category": "decor"} for n in (5, 6, 7)]
+    light_ids = [p["id"] for p in lamps]
+    part_list = lamps + [{"id": "eye_frame", "primitive": "rounded_box", "category": "structure"},
+                         {"id": "button", "primitive": "sphere", "category": "decor"},
+                         {"id": "unlisted", "primitive": "sphere", "category": "light"}]
+    lights = {"parts": part_list, "functions": [{"name": "light_up", "parts": [
+        *light_ids, "eye_5", "eye_frame", "button", "missing"]}]}
+    donors = [{**one[1], "item_id": "excluded", "user_excluded": True}, {**one[1], "item_id": "kept"}]
+    stale = build_plan({"parts": [], "functions": [{"name": "light_up"}]}, donors, [])
+    stale["memory_notes"] = ["original"]
+    repaired = with_allocations(stale, lights, donors)
+    for component in LIGHT_NEEDS:
+        assert [u["part_id"] for u in repaired["allocations"] if u["need"] == component] == light_ids
+    assert repaired["from_your_drawer"][0]["item_id"] == "kept" and repaired["held_out"] == stale["held_out"]
+    assert repaired["memory_notes"] == ["original"] and with_allocations(repaired, lights, donors) is repaired
