@@ -35,9 +35,17 @@ async def check(dist):
                     assert same.headers["cache-control"] == "no-cache"
             asset = (await client.get("/assets/index-current.js")).raise_for_status()
             assert asset.content == bundle.read_bytes() and "cache-control" not in asset.headers
+            # The workbench re-reads /api/config on the sketch and drawer steps, so each read must be live.
+            for local, key in ((None, ""), ("local", "test-key-not-real"), (None, "")):
+                async def source():
+                    return local
+                with patch.object(main.vision, "vision_source", source), patch.dict(main.os.environ, {"GEMINI_API_KEY": key}):
+                    fresh = (await client.get("/api/config")).raise_for_status()
+                assert fresh.json()["vision_providers"] == {"local": bool(local), "gemini": bool(key)}
+                assert fresh.json()["vision_available"] == bool(local) and "test-key-not-real" not in fresh.text
 
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as directory:
         asyncio.run(check(Path(directory)))
-    print("PASS refreshed workbench HTML, HEAD and conditional 304 on all three entry routes; static assets unchanged")
+    print("PASS refreshed workbench HTML, HEAD and conditional 304 on all three entry routes; static assets unchanged; provider availability re-read on every /api/config")

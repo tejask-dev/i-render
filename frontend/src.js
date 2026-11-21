@@ -45,6 +45,7 @@ const defaults = () => ({
 let s = defaults(),
   config = { templates: [], salvage_keys: [], vision_available: false },
   configProblem = "",
+  configGeneration = 0,
   viewer,
   viewGeneration = 0,
   recognition,
@@ -132,6 +133,7 @@ function goto(stage) {
   s.stage = stage;
   s.error = "";
   render();
+  if (stage === "sketch" || stage === "drawer") refreshProviders();
   requestAnimationFrame(() =>
     document.querySelector("main h1")?.focus({ preventScroll: true }),
   );
@@ -256,6 +258,43 @@ function availableProviders() {
     local: config.vision_source === "local",
     gemini: config.vision_source === "gemini",
   };
+}
+async function loadConfig() {
+  const generation = ++configGeneration;
+  try {
+    const fresh = await request("/config");
+    if (generation !== configGeneration) return false;
+    // After a good first load only recognition availability is refreshed, so voice controls stay as chosen.
+    config = configProblem || !config.vision_providers
+      ? fresh
+      : { ...config, vision_available: fresh.vision_available, vision_providers: fresh.vision_providers, vision_source: fresh.vision_source };
+    configProblem = "";
+    return true;
+  } catch (e) {
+    if (generation === configGeneration && !config.vision_providers) configProblem = e.message;
+    return false;
+  }
+}
+async function refreshProviders() {
+  const before = JSON.stringify(availableProviders()),
+    problem = configProblem;
+  if (!(await loadConfig())) return;
+  const available = availableProviders();
+  // A cloud choice that went away falls back to on-device; nothing is ever switched to Gemini.
+  for (const kind of ["sketch", "drawer"])
+    if (!available[s.providers[kind]]) s.providers[kind] = "local";
+  if (before === JSON.stringify(available) && !problem) return;
+  if ((s.stage !== "sketch" && s.stage !== "drawer") || s.busy || camera) return;
+  const active = document.activeElement,
+    focus = !app.contains(active) ? ""
+      : active.id ? "#" + CSS.escape(active.id)
+      : active.dataset.provider ? `[data-provider="${active.dataset.provider}"]`
+      : active.dataset.action ? `[data-action="${active.dataset.action}"]`
+      : active.dataset.plus ? `[data-plus="${active.dataset.plus}"]`
+      : active.dataset.minus ? `[data-minus="${active.dataset.minus}"]`
+      : active.matches("h1") ? "main h1" : "";
+  render();
+  if (focus) $(focus)?.focus({ preventScroll: true });
 }
 const applePhoto = (file) =>
   /image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
@@ -519,6 +558,7 @@ async function job(status, work) {
     s.busy = "";
     render();
     if (s.error) $("#notice")?.scrollIntoView({ block: "center" });
+    if (s.error && (s.stage === "sketch" || s.stage === "drawer")) refreshProviders();
   }
 }
 async function remember(q) {
@@ -1192,11 +1232,7 @@ app.addEventListener("click", async (e) => {
   }
 });
 async function boot() {
-  try {
-    config = await request("/config");
-  } catch (e) {
-    configProblem = e.message;
-  }
+  await loadConfig();
   const match =
     location.pathname.match(/^\/project\/([^/]+)\/?$/) ||
     location.hash.match(/^#project\/(.+)$/);
@@ -1210,6 +1246,9 @@ async function boot() {
 window.addEventListener("pagehide", output.stop);
 window.addEventListener("pagehide", cancelRecording);
 window.addEventListener("pagehide", closeCamera);
+window.addEventListener("focus", () => {
+  if (s.stage === "sketch" || s.stage === "drawer") refreshProviders();
+});
 window.addEventListener("hashchange", () => {
   const match = location.hash.match(/^#project\/(.+)$/);
   if (match) loadProject(decodeURIComponent(match[1]));

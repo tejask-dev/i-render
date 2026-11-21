@@ -66,8 +66,25 @@ def check(work):
         store.initialize()
         assert projects() == ({}, original_projects)
 
+        # Recall ranks by relevance: a generic auto-name never matches, and saved work only wins a tie.
+        seed_file.write_text(json.dumps({"example-recall": {
+            "project_name": "Greenhouse mister", "note": "Mists seedlings on a timer.",
+            "outcome": "worked", "keywords": "recallfern recallmist recallpump"}}))
+        store.initialize()
+        saved = [store.save_project(f"recall-plan-{n}", {
+            "project_name": name, "note": note, "outcome": "worked", "keywords": keywords,
+        }) for n, (name, note, keywords) in enumerate((
+            ("Shelf Bot", "Holds a paperback open.", "recallshelf"),
+            ("Fern Bot", "Labels a pot.", "recallfern"),
+            ("Mist Bot", "Labels a second pot.", "recallfern"),
+        ))]
+        assert store.search("Bot") == [] and store.search("build a recallcrane bot") == []
+        assert [hit["project_id"] for hit in store.search("Recallmist recallpump recallfern Bot")] == [None, saved[2]]
+        assert [hit["project_id"] for hit in store.search("Recallfern Bot")] == [saved[2], saved[1]]
+        assert [hit["project_id"] for hit in store.search("Recallshelf Bot")] == [saved[0]]
+
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as directory:
         check(Path(directory))
-    print("PASS current seed catalog, editable titles and IDs, empty catalog, invalid-edit rollback and saved-project isolation")
+    print("PASS current seed catalog, editable titles and IDs, empty catalog, invalid-edit rollback, saved-project isolation and relevance-ranked recall")

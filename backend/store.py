@@ -125,6 +125,7 @@ def search(query):
             "that",
             "build",
             "robot",
+            "bot",
             "project",
             "make",
         }
@@ -147,8 +148,8 @@ def search(query):
             result["seeded"] = plan_id is None
             result["project_id"] = None if result["seeded"] else key
             hits.append((len(overlap), not result["seeded"], result))
-    # Prefer a maker's actual saved project over a seeded example on a related query.
-    hits.sort(key=lambda x: (x[1], x[0]), reverse=True)
+    # Rank by relevance; a maker's actual saved project wins a tie with a seeded example.
+    hits.sort(key=lambda x: (x[0], x[1]), reverse=True)
     return [hit[2] for hit in hits[:2]]
 
 

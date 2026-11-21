@@ -24,7 +24,7 @@ uv venv --python 3.12
 uv pip install -r requirements.txt
 npm --prefix frontend ci
 npm --prefix frontend run build
-.venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8765
+./"Start Demo.command"
 ```
 
 For local photo recognition, install Ollama and run `ollama serve`, then `ollama pull qwen3-vl:4b-instruct` in another terminal. Reload the workbench once downloaded. The first photo loads the model into memory. Subsequent identical inputs may use a labelled saved recognition. Every new shape still goes through the geometry builder.
@@ -63,6 +63,8 @@ Open [seed_projects.json](data/seed_projects.json). Each top-level key is a stab
 Run `.venv/bin/python -m eval.check_seed_projects` before restarting. It checks your file in a temporary notebook. Invalid JSON or missing fields prevent the server from starting. After the check passes, press Control-C in the terminal running the workbench, then double-click **Start Demo.command**. Opening the launcher while the server is still running reuses that server. Search the notebook for one of your keywords to see the updated example. Removing a key retires that example on the next startup. Your saved builds retain their notes.
 
 ## Verification
+
+`node eval/check_provider_refresh.mjs` checks provider recovery, stale-response ordering and preservation of the selected photo without making network calls.
 
 `python -m backend.check_cad` checks the CAD solids with the project environment active. `python -m backend.salvage` checks the component counts. The end-to-end check writes an Eval Rover into the notebook it runs against, so it defaults to a rehearsal server on port 8768 and exits before writing if the server reports `demo_store: true`. Start the rehearsal server in one terminal:
 
