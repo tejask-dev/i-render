@@ -1,5 +1,5 @@
 const imports = import.meta.glob(
-  "/node_modules/lucide/icons/{arrow-right,arrow-left,arrow-up-right,volume-2,volume-x,book-open,pencil-ruler,pencil,box,boxes,check,plus,x,download,mic,upload,rotate-ccw,focus,minus,search,save,triangle-alert,chevron-right,move-3d,settings-2,lightbulb,component,eye,power,wand-sparkles}.svg",
+  "/node_modules/lucide/icons/{arrow-right,arrow-left,arrow-up-right,volume-2,volume-x,book-open,pencil-ruler,pencil,box,boxes,check,plus,x,download,mic,upload,rotate-ccw,focus,minus,search,save,triangle-alert,chevron-right,move-3d,settings-2,lightbulb,component,eye,power,wand-sparkles,pause,play}.svg",
   { eager: true, query: "?raw", import: "default" },
 );
 const icons = Object.fromEntries(

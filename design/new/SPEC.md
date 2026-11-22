@@ -78,7 +78,15 @@ Brand drop SVG (radial white→`#7FA9FF` fill, soft white glow, shine). States m
 
 ## 3. Screens and their functions
 
-### 0 · Landing (dark)
+### 0 · Landing (dark) — ✅ built
+Implemented in [frontend/landing.js](../../frontend/landing.js) (motion) and `landing()` in [frontend/src.js](../../frontend/src.js). Shown on every fresh load except saved-project links. **Start rendering** / **Skip to workshop** → Cover flow; **Open notebook** → Notebook.
+
+Copy as built (change in `landingWords` / `landingLines`):
+- Typed loop: **"I,Render"** (hold 1.6 s) → delete → **"what’s creative?"** (hold 2.4 s) → repeat.
+- Rotating line, every 3.2 s: *Sketch it on paper.* · *Raid your junk drawer.* · *Watch Rendi render it in 3D.* · *Build it with your own hands.*
+- Network: 28–110 ASCII glyphs (`.:+*#=~/\<>01{}[]`) linked within 132 px; the pointer pushes glyphs away within 150 px and draws white lines to nearby glyphs. Glass panel = white 8 % + 14 px blur.
+- **Pause motion** button stops typing, rotation, particles and caret. Reduced motion: static "I,Render", first line, one still frame, no pause button. Touch: no pointer effect.
+
 | Function | Behaviour | Notes |
 | --- | --- | --- |
 | Typing headline | Types **"I, Render"**, pauses, deletes, retypes **"what's creative?"** | Respect reduced motion: show the final text, no typing |
@@ -214,7 +222,7 @@ Tracked here and in the chat discussion. Answers become decisions in this doc.
 
 1. **Theme:** the brand mixes a light app ground with Midnight hero panels (as built). Should the landing go fully dark?
 2. **Navigation:** after the landing, is the Cover flow the "home"? Is there a persistent top bar (logo, voice, back to gallery)? Can users jump back between Render steps?
-3. **Landing copy:** what phrases cycle below "what's creative?"? Does "I, Render" retype once or loop?
+3. **Landing copy:** built with placeholder copy (see §3 · 0). Replace the four rotating lines? Keep the loop?
 4. **Junk-drawer salvage:** the current core feature (scan drawer → match donor parts) has no clear slot. Fold it into Step 3 ("check what you already have") or the Playground inventory, or drop it?
 5. **Shopping cart:** list-only, or links to real stores (which)? Prices? Export or share the list? No real checkout?
 6. **"Modify" the 3D model:** select and recolour parts? Resize parts (needs regenerating)? Add or remove parts? Drag positions?

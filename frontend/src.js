@@ -206,6 +206,12 @@ function progress() {
   if (n === undefined) return "";
   return `<ol class="progress" aria-label="Build progress">${steps.map((step, i) => `<li class="${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}><span>${i < n ? icon("check") : i + 1}</span>${step}</li>`).join("")}</ol>`;
 }
+const landingWords = ["I,Render", "what\u2019s creative?"];
+const landingLines = ["Sketch it on paper.", "Raid your junk drawer.", "Watch Rendi render it in 3D.", "Build it with your own hands."];
+let landingStop = null;
+function landing() {
+  return `<main id="work" class="landing" tabindex="-1"><canvas class="landing-net" aria-hidden="true"></canvas><div class="landing-top"><span class="landing-brand">${drop}<span>I,Render</span></span>${btn("Skip to workshop", "enter", "text-btn on-dark", "arrow-right")}</div><section class="landing-glass" aria-labelledby="landing-title"><p class="landing-kicker">drop an idea,</p><h1 id="landing-title" tabindex="-1" aria-label="I,Render. What\u2019s creative?"><span data-type aria-hidden="true">I,Render</span><span class="caret" aria-hidden="true"></span></h1><p class="landing-rotate" data-rotate aria-hidden="true">${landingLines[0]}</p><p class="landing-sub">Rendi turns your drawing and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start rendering", "enter", "primary on-dark")}${btn("Open notebook", "notebook", "secondary on-dark", "book-open")}</div></section><div class="landing-foot"><button type="button" class="landing-pause" data-motion-toggle aria-pressed="false">${icon("pause")}<span>Pause motion</span></button><span>Move your cursor through the network.</span></div></main>`;
+}
 function coverItems() {
   const saved = savedIndex().slice(0, 4).map((p) => ({ kind: "saved", id: p.id, name: p.name, note: "Saved build" }));
   const starters = examples.map((e, i) => ({ kind: "example", id: e.id, name: e.name, note: e.blurb, sketch: i }));
@@ -581,6 +587,18 @@ function render() {
   viewer = null;
   cancelRecognition();
   inputActivity = "idle";
+  landingStop?.();
+  landingStop = null;
+  if (s.stage === "landing") {
+    app.innerHTML = landing();
+    import("./landing.js")
+      .then(({ mountLanding }) => {
+        if (generation !== viewGeneration || s.stage !== "landing") return;
+        landingStop = mountLanding(app.querySelector(".landing"), { words: landingWords, lines: landingLines, icons: { pause: icon("pause"), play: icon("play") } });
+      })
+      .catch(() => {});
+    return;
+  }
   const outer = {
     home,
     interview,
@@ -1234,6 +1252,9 @@ app.addEventListener("click", async (e) => {
       opener?.focus();
       break;
     }
+    case "enter":
+      goto("home");
+      break;
     case "home":
     case "workshop":
       if (s.stage === "notebook" && s.returnStage) {
@@ -1255,7 +1276,7 @@ app.addEventListener("click", async (e) => {
     case "notebook":
       if (s.stage !== "notebook") {
         capture();
-        s.returnStage = s.stage !== "home" ? s.stage : null;
+        s.returnStage = s.stage !== "home" && s.stage !== "landing" ? s.stage : null;
         goto("notebook");
       }
       break;
@@ -1374,6 +1395,7 @@ window.addEventListener("hashchange", () => {
   const match = location.hash.match(/^#project\/(.+)$/);
   if (match) loadProject(decodeURIComponent(match[1]));
 });
+if (!/^\/project\//.test(location.pathname) && !/^#project\//.test(location.hash)) s.stage = "landing";
 render();
 boot();
 app.addEventListener("keydown", (e) => {

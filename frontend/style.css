@@ -2048,3 +2048,188 @@ details li {
 .results .photo-map {
   margin: 1rem 0;
 }
+
+/* ---------- Landing ---------- */
+.landing {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  max-width: none;
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(18px, 3vw, 32px) clamp(20px, 5vw, 64px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: #fff;
+  background:
+    radial-gradient(60% 55% at 50% 48%, rgb(25 81 252 / 0.55), transparent 70%),
+    radial-gradient(40% 40% at 85% 10%, rgb(55 129 252 / 0.35), transparent 70%),
+    radial-gradient(45% 45% at 8% 92%, rgb(11 44 177 / 0.6), transparent 70%),
+    var(--midnight);
+}
+.landing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain);
+  mix-blend-mode: overlay;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.landing:focus {
+  outline: 0;
+}
+.landing-net {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.landing-top,
+.landing-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 1.3rem var(--display);
+  letter-spacing: -0.02em;
+}
+.text-btn.on-dark {
+  color: var(--pale-2);
+  min-height: 44px;
+  padding: 0 0.4rem;
+}
+.text-btn.on-dark:hover {
+  color: #fff;
+}
+.landing-glass {
+  place-self: center;
+  width: min(900px, 100%);
+  min-width: 0;
+  container-type: inline-size;
+  margin: clamp(1.5rem, 4vh, 3rem) 0;
+  padding: clamp(1.8rem, 4.5vw, 3.6rem);
+  text-align: center;
+  border-radius: var(--r-xl);
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 40px 80px rgb(0 0 0 / 0.35);
+}
+.landing-kicker {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1;
+  color: var(--pale);
+}
+.landing-glass h1 {
+  margin: 0.25rem 0 0.4rem;
+  font-size: min(7rem, 13.5cqi);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  min-height: 1.05em;
+  white-space: nowrap;
+}
+.caret {
+  display: inline-block;
+  width: 0.07em;
+  height: 0.82em;
+  margin-left: 0.06em;
+  vertical-align: -0.04em;
+  border-radius: 2px;
+  background: var(--sky);
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret {
+  50% { opacity: 0; }
+}
+.landing-rotate {
+  min-height: 1.3em;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.2;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.26s var(--ease), transform 0.26s var(--ease);
+}
+.landing-rotate.is-in {
+  opacity: 1;
+  transform: none;
+}
+.landing-sub {
+  max-width: 44ch;
+  margin: 1rem auto 0;
+  font-size: clamp(1rem, 1.3vw, 1.1rem);
+  line-height: 1.55;
+  color: var(--pale-2);
+}
+.landing-glass .actions {
+  justify-content: center;
+  margin-top: 1.8rem;
+}
+.landing-foot {
+  font-size: 0.85rem;
+  color: var(--pale);
+}
+.landing-pause {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: var(--glass);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(20px);
+  transition: background 0.15s var(--ease);
+}
+.landing-pause:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+@media (max-width: 680px) {
+  .landing-glass {
+    padding: 1.6rem 1.2rem;
+  }
+  .landing-glass .actions > * {
+    flex: 1 1 100%;
+  }
+  .landing-foot > span {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .landing-foot > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    display: none;
+  }
+  .landing-rotate {
+    opacity: 1;
+    transform: none;
+  }
+}
+.landing.is-paused .caret {
+  animation: none;
+}
