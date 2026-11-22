@@ -52,7 +52,7 @@ let s = defaults(),
   recognition,
   recording,
   camera;
-const steps = ["Brief", "Sketch", "Model", "Drawer", "Plan"];
+const steps = ["Brief", "Sketch", "Model", "Drawer", "Build"];
 const ranks = {
   interview: 0,
   confirm: 0,
@@ -531,48 +531,127 @@ function briefDetails() {
   const b = s.brief;
   return `<details class="card pad"><summary>Idea and model assumptions</summary><dl class="compact"><dt>Scale</dt><dd>${esc(b.scale)} · ${esc(b.approx_size_cm)} cm</dd><dt>Vibe</dt><dd>${esc(b.vibe.join(", "))}</dd><dt>Adventure</dt><dd>${esc(b.adventure_aura)}</dd><dt>Functions</dt><dd>${esc(s.model.spec.functions.map((f) => pretty(f.name)).join(", "))}</dd></dl><ul>${s.model.spec.assumptions.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></details>`;
 }
-function result() {
-  const p = s.plan.plan,
-    got = p.from_your_drawer,
-    missing = p.to_source,
-    warnings = Array.from(
-      new Set([
-        ...(p.safety_notes || []),
-        ...(s.inv?.inventory?.items || [])
-          .filter((item) => heldOut(item) && !item.user_excluded)
-          .map(
-            (it) =>
-              "Leave " +
-              (it.raw_name || pretty(it.label)) +
-              " intact. Do not open or reuse its parts.",
-          ),
-      ]),
-    );
-  const candidateCount = got.reduce((sum, row) => sum + row.qty, 0);
-  const requiredCount = candidateCount + missing.reduce((sum, row) => sum + row.qty, 0);
+function planWarnings(p) {
+  return Array.from(
+    new Set([
+      ...(p.safety_notes || []),
+      ...(s.inv?.inventory?.items || [])
+        .filter((item) => heldOut(item) && !item.user_excluded)
+        .map((it) => "Leave " + (it.raw_name || pretty(it.label)) + " intact. Do not open or reuse its parts."),
+    ]),
+  );
+}
+const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+const stepText = (a) => (typeof a === "string" ? a : [a.title, a.detail].filter(Boolean).join(" — "));
+function stepParts(text) {
+  const t = text.toLowerCase();
+  return (s.model?.spec.parts || []).filter((part) => part.label && t.includes(part.label.toLowerCase())).map((part) => part.id);
+}
+function playgroundState() {
+  const id = s.projectId ? "p:" + s.projectId : "plan:" + (s.plan?.plan_id || "draft");
+  if (s.playground?.plan === s.plan) {
+    if (s.playground.id !== id) {
+      s.playground.id = id;
+      savePlayground();
+    }
+    return s.playground;
+  }
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem("irender-playground-" + id) || "{}");
+  } catch {}
+  s.playground = { id, plan: s.plan, step: Number(saved.step) || 0, checked: new Set(saved.checked || []) };
+  return s.playground;
+}
+function savePlayground() {
+  const pg = s.playground;
+  if (!pg) return;
+  try {
+    localStorage.setItem("irender-playground-" + pg.id, JSON.stringify({ step: pg.step, checked: [...pg.checked] }));
+  } catch {}
+}
+function stepCard() {
+  const steps = s.plan.plan.steps || [], pg = playgroundState();
+  if (!steps.length) return `<span class="eyebrow"><i></i>Assemble</span><h2>No steps yet</h2><p>This plan has no assembly steps.</p>`;
+  pg.step = Math.min(Math.max(pg.step, 0), steps.length - 1);
+  const i = pg.step, text = stepText(steps[i]);
+  const parts = stepParts(text).map((id) => s.model.spec.parts.find((p) => p.id === id));
+  const chips = parts.length ? `<div class="pg-step-parts" role="group" aria-label="Parts in this step">${parts.map((part) => `<button type="button" class="choice" data-part="${esc(part.id)}" aria-pressed="${s.selectedPart === part.id}">${esc(part.label)}</button>`).join("")}</div>` : "";
+  const dots = steps.map((_, n) => `<button type="button" class="pg-dot${n === i ? " is-current" : n < i ? " is-done" : ""}" data-step="${n}" aria-label="Go to step ${n + 1}"${n === i ? ' aria-current="step"' : ""}></button>`).join("");
+  return `<div class="split"><span class="eyebrow"><i></i>Assemble</span><span class="pg-count">Step ${i + 1} of ${steps.length}</span></div><div class="pg-step" aria-live="polite"><span class="pg-step-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span><p>${esc(text)}</p></div>${chips}<div class="pg-step-nav"><button type="button" class="secondary" data-step-go="-1" ${i === 0 ? "disabled" : ""}>${icon("arrow-left")} Back</button><div class="pg-dots">${dots}</div><button type="button" class="primary" data-step-go="1" ${i === steps.length - 1 ? "disabled" : ""}>Next step ${icon("arrow-right")}</button></div>`;
+}
+function inventoryRows() {
+  const p = s.plan.plan, pg = playgroundState();
   const allocationContext = (row) => {
     const places = (row.part_ids || []).map((id) => s.model.spec.parts.find((part) => part.id === id)?.label).filter(Boolean);
     if (places.length) return `<small>Model · ${esc(places.join(", "))}</small>`;
     if (row.functions?.length) return `<small>For ${esc(row.functions.map((name) => actionLabels[name] || pretty(name)).join(", "))} · mount unspecified</small>`;
     return "";
   };
-  const donorRows = got.map((row, i) => {
+  const check = (key, label) => `<button type="button" class="pg-check" data-check="${key}" aria-pressed="${pg.checked.has(key)}" aria-label="${esc((pg.checked.has(key) ? "Untick " : "Tick ") + label)}">${icon("check")}</button>`;
+  const donors = p.from_your_drawer.map((row, i) => {
     const item = s.inv.inventory.items[row.item_index];
     const name = item?.raw_name || pretty(row.source);
     const donor = Number.isInteger(row.item_index) ? `Item ${row.item_index + 1} · ${name}` : name;
-    return `<details class="part-row" data-donor-row="${i}"><summary><b>${esc(pretty(row.need))} ×${esc(row.qty)}</b><span>${esc(donor)}</span></summary>${allocationContext(row)}<p>${esc(row.how)}</p>${row.tools?.length ? `<small>Tools · ${esc(row.tools.join(", "))}</small>` : ""}${row.substitution ? `<p>Substitution · ${esc(row.substitution)}</p>` : ""}</details>`;
-  }).join("");
-  const excludedNames = s.inv.inventory.items.filter((item, i) => s.excluded.has(i) || item.user_excluded)
-    .map((item) => item.raw_name || pretty(item.label));
-  const photo = annotation();
-  const drawerPanel = `<section class="card pad" id="drawer-matches"><span class="eyebrow"><i></i>Salvage</span><h2>From your drawer</h2>${photo}${donorRows || "<p>No matching parts found.</p>"}${excludedNames.length ? `<p><small>Left out of the match · ${esc(excludedNames.join(", "))}</small></p>` : ""}</section>`;
+    const key = "d" + i, label = `${capital(pretty(row.need))} ×${row.qty}`;
+    return `<li class="part-row pg-row${pg.checked.has(key) ? " is-checked" : ""}" data-donor-row="${i}">${check(key, label)}<details><summary><b>${esc(label)}</b><span class="pg-source drawer">${icon("box")} ${esc(donor)}</span></summary>${allocationContext(row)}<p>${esc(row.how)}</p>${row.tools?.length ? `<small>Tools · ${esc(row.tools.join(", "))}</small>` : ""}${row.substitution ? `<p>Substitution · ${esc(row.substitution)}</p>` : ""}</details></li>`;
+  });
   const alternatives = (row) => row.alternatives?.length ? `<details class="alternatives"><summary>Other parts to consider</summary><p>These need changes and a compatibility check. They do not reduce the parts still needed.</p><ul>${row.alternatives.map((a) => `<li><strong>${esc(pretty(a.component))} ×${esc(a.qty)}</strong><br><small>Item ${esc(a.item_index + 1)} · ${esc(a.raw_name)}</small><p>${esc(a.note)}</p></li>`).join("")}</ul></details>` : "";
-  const sourcePanel = `<section class="card pad"><span class="eyebrow"><i></i>Parts list</span><h2>Still to source</h2>${missing.map((r, i) => `<div class="part-row" data-source-row="${i}"><b>${esc(pretty(r.need))} ×${esc(r.qty)}</b><p>${esc(r.suggestion)}</p>${allocationContext(r)}${alternatives(r)}</div>`).join("") || (requiredCount ? "<p>Your drawer has candidates for every required component.</p>" : "<p>No component requirements have been mapped.</p>")}</section>`;
-  const score = `<div class="score"><strong>${esc(p.drawer_score)}<small>%</small></strong><div><h2>${candidateCount} of ${requiredCount} required components have drawer candidates.</h2><span>Check their fit and electrical ratings before use.</span></div></div>`;
+  const sources = p.to_source.map((r, i) => {
+    const key = "s" + i, label = `${capital(pretty(r.need))} ×${r.qty}`;
+    return `<li class="part-row pg-row${pg.checked.has(key) ? " is-checked" : ""}" data-source-row="${i}">${check(key, label)}<details><summary><b>${esc(label)}</b><span class="pg-source buy">${icon("search")} To source</span></summary><p>${esc(r.suggestion)}</p>${allocationContext(r)}${alternatives(r)}</details></li>`;
+  });
+  return { rows: [...donors, ...sources], total: donors.length + sources.length };
+}
+function inventoryHead() {
+  const pg = playgroundState(), { total } = inventoryRows();
+  const done = [...pg.checked].filter((key) => /^[ds]\d+$/.test(key) && Number(key.slice(1)) < (key[0] === "d" ? s.plan.plan.from_your_drawer.length : s.plan.plan.to_source.length)).length;
+  const ready = total && done === total;
+  return `<div class="split"><span class="eyebrow"><i></i>Inventory</span><span class="pg-count">${esc(s.plan.plan.drawer_score)}% from your drawer</span></div><h2>${ready ? "Everything’s ready." : `${done} of ${total} gathered`}</h2><div class="pg-bar" role="progressbar" aria-label="Parts gathered" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><span style="width:${total ? (done / total) * 100 : 0}%"></span></div>${ready ? '<p class="pg-ready">Build it. Rendi will be proud.</p>' : ""}`;
+}
+function result() {
+  const p = s.plan.plan, warnings = planWarnings(p), { rows } = inventoryRows();
+  const spec = s.model.spec;
+  const excludedNames = s.inv.inventory.items.filter((item, i) => s.excluded.has(i) || item.user_excluded).map((item) => item.raw_name || pretty(item.label));
   const notes = warnings.length ? `<aside class="safety">${icon("triangle-alert")}<div><strong>Safety notes</strong><ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div></aside>` : "";
-  const steps = `<section class="card pad"><h2>Build steps</h2><ol class="build-steps">${p.steps.map((a) => `<li>${esc(typeof a === "string" ? a : [a.title, a.detail].filter(Boolean).join(" — "))}</li>`).join("")}</ol></section>`;
+  const photo = annotation();
   const memory = p.memory_notes?.length ? `<section class="card pad"><h2>Rendi remembers</h2>${p.memory_notes.map((a) => `<p>${esc(a)}</p>`).join("")}</section>` : "";
-  return `${toolHead("Build plan", s.brief.project_name, "Model · " + presentedSource(s.model.source) + "  /  Drawer · " + presentedSource(s.inv?.source))}${unresolvedNotice()}${score}${modelPanel()}<div class="results">${drawerPanel}${sourcePanel}</div>${notes}<div class="results">${steps}<div class="stack">${sketchReference()}${briefDetails()}${memory}</div></div><div class="actions end-actions">${s.projectId ? '<span class="saved">' + icon("check") + " Saved to Rendi’s memory</span>" : btn("Save to Rendi’s memory", "save", "primary", "save")}${downloadLink("STL")}${downloadLink("GLB")}${btn("Start a new idea", "new", "text-btn", "arrow-right")}</div>`;
+  const salvage = photo || excludedNames.length ? `<section class="card pad" id="drawer-matches"><span class="eyebrow"><i></i>Salvage</span><h2>Your drawer</h2>${photo}${excludedNames.length ? `<p><small>Left out of the match · ${esc(excludedNames.join(", "))}</small></p>` : ""}</section>` : "";
+  const actions = `<div class="actions pg-actions"><div class="pg-rendi">${companion()}</div>${s.projectId ? '<span class="saved">' + icon("check") + " Saved to Rendi’s memory</span>" : btn("Save to Rendi’s memory", "save", "primary", "save")}${downloadLink("STL")}${downloadLink("GLB")}${btn("Start a new idea", "new", "text-btn", "arrow-right")}</div>`;
+  const head = `<div class="pg-head"><div class="section-heading"><span class="eyebrow"><i></i>Playground</span>${title(s.brief.project_name)}<p>Model · ${esc(presentedSource(s.model.source))} / Drawer · ${esc(presentedSource(s.inv?.source))}</p></div>${actions}</div>`;
+  const viewerPane = `<section class="pg-model" aria-label="3D model"><div class="viewer" id="viewer"><span class="viewer-status">Loading 3D model…</span><button type="button" class="spin-toggle" data-spin hidden>Pause orbit</button><button type="button" class="view-fit" data-fit aria-label="Fit model">${icon("focus")}</button><span class="view-guide">${icon("move-3d")} Drag to orbit · scroll to zoom</span></div><div class="card pg-inspector"><div class="part-list" role="group" aria-label="Model parts">${spec.parts.map((part) => `<button type="button" class="choice" aria-pressed="${s.selectedPart === part.id}" data-part="${esc(part.id)}">${esc(part.label)}</button>`).join("")}</div><div id="part-info" aria-live="polite"></div></div></section>`;
+  const side = `<div class="pg-side"><section class="card pad pg-steps" id="pg-steps" aria-label="Assembly instructions">${stepCard()}</section><section class="card pad pg-inventory" aria-label="Inventory"><div id="pg-inv-head">${inventoryHead()}</div><ul class="pg-list">${rows.join("") || "<li><p>No component requirements have been mapped.</p></li>"}</ul></section></div>`;
+  const more = `<div class="pg-more">${salvage}<div class="stack">${sketchReference()}${briefDetails()}${memory}</div></div>`;
+  return `${head}${unresolvedNotice()}${notes}<div class="playground">${viewerPane}${side}</div>${more}`;
+}
+function applyStep() {
+  if (s.stage !== "result") return;
+  const steps = s.plan.plan.steps || [];
+  const text = steps.length ? stepText(steps[playgroundState().step] || "") : "";
+  viewer?.focus(stepParts(text));
+}
+function goStep(n, refocus) {
+  const pg = playgroundState(), steps = s.plan.plan.steps || [];
+  pg.step = Math.min(Math.max(n, 0), Math.max(steps.length - 1, 0));
+  savePlayground();
+  const card = $("#pg-steps");
+  if (card) card.innerHTML = stepCard();
+  applyStep();
+  if (refocus) (card?.querySelector(refocus + ":not(:disabled)") || card?.querySelector('[aria-current="step"]'))?.focus();
+}
+function toggleCheck(key) {
+  const pg = playgroundState();
+  if (pg.checked.has(key)) pg.checked.delete(key);
+  else pg.checked.add(key);
+  savePlayground();
+  const on = pg.checked.has(key), button = $(`[data-check="${key}"]`);
+  if (button) {
+    button.setAttribute("aria-pressed", String(on));
+    button.closest(".pg-row")?.classList.toggle("is-checked", on);
+    button.setAttribute("aria-label", button.getAttribute("aria-label").replace(/^(Untick|Tick) /, on ? "Untick " : "Tick "));
+  }
+  const head = $("#pg-inv-head");
+  if (head) head.innerHTML = inventoryHead();
 }
 function notebook() {
   const index = savedIndex();
@@ -610,7 +689,7 @@ function render() {
     result,
     notebook,
   };
-  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I,Render home">${drop}<span>I,Render</span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I,Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I,Render home">${drop}<span>I,Render</span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 && s.stage !== "result" ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I,Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
   updateVoiceButton();
   updateCompanion();
   if (s.stage === "model" || s.stage === "result") {
@@ -627,6 +706,7 @@ function render() {
           selectPart,
         );
         viewer?.select(id);
+        applyStep();
       })
       .catch(() => {
         if (generation === viewGeneration)
@@ -1155,6 +1235,9 @@ app.addEventListener("click", async (e) => {
   const t = e.target.closest("button");
   if (!t || t.disabled || (s.busy && t.dataset.action !== "voice")) return;
   if (t.dataset.coverStep) return stepCover(Number(t.dataset.coverStep));
+  if (t.dataset.stepGo) return goStep(playgroundState().step + Number(t.dataset.stepGo), `[data-step-go="${t.dataset.stepGo}"]`);
+  if (t.dataset.step !== undefined) return goStep(Number(t.dataset.step), '[aria-current="step"]');
+  if (t.dataset.check) return toggleCheck(t.dataset.check);
   if (t.dataset.cover !== undefined) {
     const i = Number(t.dataset.cover);
     if (i !== coverIndex) {

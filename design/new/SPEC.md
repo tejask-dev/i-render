@@ -133,7 +133,15 @@ Copy as built (change in `landingWords` / `landingLines`):
 | Drawer salvage | Scan or count your junk drawer so items you already own are marked "have it" | `POST /api/junk`, manual inventory. See Q4 |
 | Build it | Triggers the **swirl** while the plan is written | `POST /api/plan` |
 
-### 5 · Playground
+### 5 · Playground — ✅ layout built
+Replaces the old Build plan screen (`result()` in [frontend/src.js](../../frontend/src.js)); the stepper's last step is now **Build**. Built:
+- **Left:** 3D model, pinned while the right column scrolls, with the part chips and inspector under it.
+- **Top right, Assemble:** one step at a time (Back / Next step / step dots). Parts named in the step become chips, glow blue in 3D, and the rest of the model fades (`viewer.focus(ids)`, matched by part label in the step text).
+- **Bottom right, Inventory:** every drawer donor and to-source part as a tick-off row with its source; expand for how to salvage, tools, substitutions and alternatives. "N of M gathered" plus a progress bar; all ticked shows *Everything's ready.*
+- Step and ticks persist per project in `localStorage` (`irender-playground-<id>`) and carry over when the build is saved.
+- Header: project name, a small Rendi badge, Save / STL / GLB / Start a new idea. Below the workspace: safety notes (above the grid), drawer photo, sketch, assumptions, Rendi remembers.
+- Not built yet: **modifying** the model (Q6), and the cart from Step 3 (Q5).
+
 Layout: **left** = 3D model (large) · **top right** = assembly instructions · **bottom right** = inventory.
 
 | Function | Behaviour | Source |
