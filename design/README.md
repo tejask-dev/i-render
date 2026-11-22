@@ -20,6 +20,7 @@ To compare: `git diff ui-original design/new-ui -- frontend/` · to run the orig
 - [original/screenshots/](original/screenshots/) — captures of each screen from `ui/original`.
 
 ### New design
+- [new/SPEC.md](new/SPEC.md) — **new-design reference**: journey, palette and type, every screen's functions, Rendi, generation moments, old→new feature mapping, motion rules, open questions.
 - [new/README.md](new/README.md) — design brief: goals, principles, success criteria.
 - [new/tokens.md](new/tokens.md) — color, type, spacing, radius, motion.
 - [new/flow.md](new/flow.md) — the intended user journey and navigation model.
