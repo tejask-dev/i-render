@@ -15,6 +15,7 @@ To compare: `git diff ui-original design/new-ui -- frontend/` · to run the orig
 ## Spec index
 
 ### Original (as built)
+- [original/REFERENCE.md](original/REFERENCE.md) — **reference glossary**: every page name, heading, nav label, button, status message and the web-navigation vocabulary to describe them.
 - [original/README.md](original/README.md) — audit of the current UI: screens, flow, tokens, components and the pain points we're fixing.
 - [original/screenshots/](original/screenshots/) — captures of each screen from `ui/original`.
 
