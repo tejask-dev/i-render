@@ -2,6 +2,108 @@
 
 A complete glossary of the **current** I, Render interface: what every page is called, what's on it, and the exact words it uses for navigation. Source: branch `ui/original` / tag `ui-original`. All copy below is quoted verbatim from [frontend/src.js](../../frontend/src.js).
 
+Jump to: [Features](#0-feature-inventory) · [Navigation vocabulary](#1-web-navigation-vocabulary) · [Site map](#2-site-map-page-names) · [Navigation controls](#3-navigation-language-every-control-that-moves-the-user) · [System messages](#4-system-feedback-language) · [Visual system](#5-visual-design-system) · [Observations](#6-observations-for-the-redesign)
+
+---
+
+## 0. Feature inventory
+
+Everything a user can do today, grouped by where it lives. "Optional" means it only appears when that service is set up on the Mac.
+
+### Global (every page)
+| Feature | What it does | Where in code |
+| --- | --- | --- |
+| Logo → Home | Return to the landing page | `data-action="home"` |
+| Workshop / Notebook tabs | Switch between the build wizard and saved projects; Workshop resumes your current step | `workshop`, `notebook` |
+| Voice on/off | Rendi reads prompts and questions aloud | `voice` · [voice.js](../../frontend/voice.js) |
+| Voice output picker | Choose **Browser voice** or **ElevenLabs** (optional, sends Rendi's text to ElevenLabs) | `#voice-provider` · `POST /api/speak` |
+| Rendi companion | Animated droplet mascot: blinks when idle, reacts when listening, thinking or speaking; shows a status line | `companion()` |
+| Progress stepper | Shows Brief → Sketch → Model → Drawer → Plan (display only) | `progress()` |
+| Busy overlay | Spinner + status text during any slow task; blocks other clicks | `job()` |
+| Error notice | Alert bar under the stepper | `#notice` |
+| Reset build | Clear the current build and start over (footer) | `reset` |
+| Skip link | Keyboard jump to main content | `.skip` |
+| Deep link | `/project/<id>` or `#project/<id>` reopens a saved build | `GET /api/projects/{id}` |
+
+### Home
+| Feature | What it does |
+| --- | --- |
+| Start a build | Opens the 3-question interview with a blank brief |
+| Project notebook | Opens the Notebook |
+| Starter robots (Sketchbook) | 3 example cards, **Wheelbot** (rover, drive), **Armbot** (helping hand, grab), **Blobbot** (glowing companion, light up). Clicking one prefills the interview |
+
+### 1 · Brief (interview + confirm)
+| Feature | What it does |
+| --- | --- |
+| Q1 size | Scale pills: **Handheld** (10 cm), **Desktop** (20), **Floor** (45), **Wearable** (12); exact size in cm (3–150); optional working title |
+| Q2 vibe | Free text (1–3 words) + suggestion pills: curious, playful, scrappy, retro, gentle, chaotic (max 3) |
+| Q3 adventure | Free-text story + "What should it do?" pills: Drive, Walk, Light up, Make sound, Grab, Spin, Sense distance, Display a face, Move air |
+| Dictation | Speak an answer instead of typing. **On-device dictation** (Whisper on the Mac, ~12 s) or **Dictate answer** (browser speech service); tap to start/stop, text stays editable | `dictate` · `POST /api/transcribe` |
+| Back | Return to the previous question |
+| Memory hint | While answering, Rendi searches past projects and shows "Rendi remembers *Project*" (example vs saved) | `GET /api/memory/search` |
+| Confirm brief | Summary of all answers, editable project name, **Edit** button per answer (jumps back, then "Update brief") | `POST /api/brief` |
+
+### 2 · Sketch
+| Feature | What it does |
+| --- | --- |
+| Upload a sketch | JPG, PNG, WebP, HEIC/HEIF up to 10 MB, with preview |
+| Use camera instead | Live camera preview → **Take photo** / **Cancel**; camera turns off after capture |
+| Recognition provider | Choose **On this Mac** (local Qwen via Ollama) or **Gemini** (optional, sends photo to Google); offline options are disabled and labelled |
+| Build from photo | Recognize the drawing and generate a 3D model (`POST /api/sketch`) |
+| Retry on this Mac | After a Gemini failure, re-run the same file locally |
+| Example sketches | Build a real model from a starter design at your chosen size, with no photo needed |
+| Offline fallback | If recognition is unavailable, examples still work |
+
+### 3 · Model
+| Feature | What it does |
+| --- | --- |
+| 3D viewer | three.js: drag to orbit, scroll to zoom, auto-spin with **Pause orbit**, **Fit model** button; keyboard arrows rotate, +/− zoom, Home fits |
+| Part inspector | Chips for every part (e.g. Body, Head, Left wheel); selecting one highlights it in 3D and shows type, shape, dimensions (L × W × H mm) and function. Hover also highlights |
+| Downloads | **Download STL** (for printing) and **Download GLB** (3D file) |
+| Model assumptions | Collapsible list of what the generator guessed |
+| Original sketch | Collapsible view of the photo used |
+| Warnings | "Still to design" for functions without a placed part; "Low confidence" when confidence < 0.3 |
+| Open the drawer | Go to step 4 |
+
+### 4 · Drawer (inventory + review)
+| Feature | What it does |
+| --- | --- |
+| Scan your drawer | Upload or camera-capture a photo of junk parts, pick provider, **Identify items** (`POST /api/junk`) |
+| Manual inventory | +/− counters for ~30 known item types (RC car, flashlight, computer fan, old phone, hobby servo, loose motor/LED/wheel, etc.) with a running item count; **Use manual inventory**. An empty drawer is allowed |
+| Detection review | Drawer photo with numbered boxes over each detected item; list with condition notes |
+| Exclude / Restore item | Remove a wrong detection (or duplicate) before matching; excluded boxes dim on the photo |
+| Safety hold | Hazardous items (e.g. batteries in phones) are marked **Do not open or salvage** and can't be used |
+| Match my parts / Change inventory | Build the plan (`POST /api/plan`) or go back |
+
+### 5 · Build plan
+| Feature | What it does |
+| --- | --- |
+| Drawer score | % of required components with drawer candidates, plus "N of M required components…" |
+| 3D model + inspector | Same viewer as step 3 |
+| From your drawer | Expandable rows: part needed × qty, donor item, where it goes on the model, how to salvage it, tools, substitutions. Clicking a box on the drawer photo highlights the matching donor and bill row |
+| Still to source | Parts you still need, with buying suggestions, plus **Other parts to consider** (alternatives that need modification) |
+| Safety notes | Collected warnings, including "leave X intact" for held items |
+| Build steps | Numbered assembly instructions |
+| Idea and model assumptions | Collapsible recap of the brief + generator assumptions |
+| Rendi remembers | Notes pulled from similar past projects |
+| Save to Rendi's memory | Saves the project (`POST /api/projects`), gives it a reopenable link; button becomes "Saved to Rendi's memory" |
+| Downloads | STL and GLB again |
+| Start a new idea | Begin a fresh build |
+
+### Notebook
+| Feature | What it does |
+| --- | --- |
+| Find a memory | Search past builds by project, part or action (e.g. "wheels", "glow") |
+| Search results | Matches marked as seeded example vs saved project |
+| Saved on this browser | Links to projects saved from this browser (stored in localStorage) |
+| Back to build / Start a build | Return to the build in progress, or start one |
+
+### Behind the scenes (no direct UI, but shapes the experience)
+- **Local-first:** vision (Qwen/Ollama), dictation (Whisper) and storage (SQLite in `.var/workbench/`) run on the Mac; Gemini and ElevenLabs are opt-in and labelled before use.
+- **Saved recognition:** identical photos can reuse a labelled previous result.
+- **Contracts:** ProjectBrief → RobotSpec → Inventory → BuildPlan ([prompts/schemas/](../../prompts/schemas/)).
+- **Accessibility:** live regions for status, focus moves to each page's heading, aria-pressed on toggles, keyboard 3D controls.
+
 ---
 
 ## 1. Web navigation vocabulary
