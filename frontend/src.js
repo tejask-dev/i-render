@@ -689,7 +689,7 @@ function render() {
     result,
     notebook,
   };
-  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I,Render home">${drop}<span>I,Render</span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 && s.stage !== "result" ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I,Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I,Render home">${drop}<span>I,Render</span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 && s.stage !== "result" ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I,Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy && !swirling ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
   updateVoiceButton();
   updateCompanion();
   if (s.stage === "model" || s.stage === "result") {
@@ -717,8 +717,27 @@ function render() {
   if (s.stage === "drawer") tally();
   if (s.stage === "home") layoutCover();
 }
+const swirlKinds = {
+  "Reading the sketch and building your model…": "sketch",
+  "Building your dimensioned example…": "example",
+  "Identifying items in the photo…": "drawer",
+  "Matching parts and writing your plan…": "plan",
+};
+let swirlModule = null, swirling = false;
+import("./swirl.js").then((m) => (swirlModule = m)).catch(() => {});
 async function job(status, work) {
   if (s.busy) return;
+  const kind = swirlKinds[status];
+  let swirl = null;
+  if (kind && swirlModule) {
+    try {
+      swirl = swirlModule.showSwirl({ status, kind });
+      swirling = true;
+      app.inert = true;
+    } catch {
+      swirl = null;
+    }
+  }
   s.busy = status;
   s.error = "";
   render();
@@ -728,7 +747,13 @@ async function job(status, work) {
     s.error = e.message || "Something went wrong. Please try again.";
   } finally {
     s.busy = "";
+    swirling = false;
     render();
+    if (swirl) {
+      await swirl.finish(!s.error);
+      app.inert = false;
+      document.querySelector("main h1")?.focus({ preventScroll: true });
+    }
     if (s.error) $("#notice")?.scrollIntoView({ block: "center" });
     if (s.error && (s.stage === "sketch" || s.stage === "drawer")) refreshProviders();
   }

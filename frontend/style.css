@@ -2540,3 +2540,110 @@ details li {
 .pg-rendi .rendi-sparkle {
   display: none;
 }
+
+/* ---------- Generation swirl ---------- */
+.swirl {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at 50% 46%, rgb(25 81 252 / 0.55), transparent 55%),
+    rgb(3 25 91 / 0.86);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  opacity: 0;
+  transition: opacity 0.22s var(--ease);
+}
+.swirl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain);
+  mix-blend-mode: overlay;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.swirl.is-open {
+  opacity: 1;
+}
+.swirl.is-closing {
+  opacity: 0;
+  transition-duration: 0.5s;
+}
+.swirl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: screen;
+}
+.swirl-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0 24px;
+  text-align: center;
+  transform: translateY(40px);
+}
+.swirl-drop {
+  width: 200px;
+  height: 200px;
+  margin: -40px 0 0.2rem;
+  overflow: visible;
+  filter: drop-shadow(0 0 28px rgb(127 169 255 / 0.85));
+  animation: swirl-pulse 1.6s ease-in-out infinite;
+}
+.swirl-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rendi-twinkle 1.4s ease-in-out infinite;
+}
+.swirl-status {
+  font: 700 clamp(1.3rem, 2.6vw, 1.9rem) / 1.1 var(--display);
+  letter-spacing: -0.03em;
+}
+.swirl-stage {
+  min-height: 1.3em;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+  color: var(--pale);
+}
+.swirl-stage.is-in {
+  animation: swirl-stage 0.32s var(--ease);
+}
+.swirl-long {
+  max-width: 40ch;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--pale-2);
+}
+.swirl.is-done .swirl-drop {
+  animation: swirl-done 0.52s var(--ease) forwards;
+}
+@keyframes swirl-pulse {
+  50% { transform: scale(1.06); }
+}
+@keyframes swirl-stage {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@keyframes swirl-done {
+  40% { transform: scale(1.18); filter: drop-shadow(0 0 60px #fff); }
+  to { transform: scale(0.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swirl {
+    background:
+      radial-gradient(circle at 50% 46%, transparent 18%, rgb(55 129 252 / 0.5) 22%, transparent 34%),
+      radial-gradient(circle at 50% 46%, rgb(25 81 252 / 0.55), transparent 55%),
+      rgb(3 25 91 / 0.9);
+  }
+  .swirl-canvas {
+    display: none;
+  }
+}

@@ -172,7 +172,13 @@ Conversational-UX rules: one clear thing per line; say what response is expected
 
 ---
 
-## 5. Generation moments (the swirl)
+## 5. Generation moments (the swirl) — ✅ built
+Implemented in [frontend/swirl.js](../../frontend/swirl.js), triggered from `job()` in [frontend/src.js](../../frontend/src.js) for four labels: reading a sketch, building a starter example, identifying drawer items, writing the plan (`swirlKinds`). Other waits keep the small busy pill.
+- Opens immediately; the page underneath is `inert`. Three spiral arms of particles stream Sky → white into Rendi's **Rendering** face (eyes shut, sparkles).
+- Status in Space Grotesk; a serif stage line advances every 2.2 s and holds on the last stage; after 10 s a "still working" note explains the wait.
+- Success: stays at least 0.9 s, says *Rendered.*, the vortex collapses inward, Rendi flashes, the overlay fades onto the new screen, and focus moves to its heading. Failure: fades in 0.2 s and the error shows in the notice bar.
+- Reduced motion: no canvas, a still glowing ring with the same text. No cancel yet: the backend calls can't be aborted.
+
 | Function | Behaviour |
 | --- | --- |
 | Trigger | Step 2 → model generation; Step 3 → plan generation |
