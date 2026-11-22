@@ -95,7 +95,8 @@ Copy as built (change in `landingWords` / `landingLines`):
 | Enter | Button / Enter key / scroll → Cover flow | |
 | Global | Voice on/off, voice output | Carried over from the header |
 
-### 1 · Cover flow (project gallery)
+### 1 · Cover flow (project gallery) — ✅ built as the single home page
+One midnight panel: *good to see you,* / **Your renders.**, a one-line hint, and the carousel centred on **Start new project**. No separate hero. Starter cards are text only (tag, name, one line), with no sketch images. Saved builds sit to the left, starters to the right.
 | Function | Behaviour | Source |
 | --- | --- | --- |
 | Carousel | 3D cover-flow cards; centre card faces forward, neighbours angled and dimmed | New |

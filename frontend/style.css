@@ -142,12 +142,11 @@ small,
   top: 8px;
 }
 
-/* ---------- Dark cobalt surface (hero, companion, viewer, score, busy) ---------- */
-.hero,
+/* ---------- Dark cobalt surface (home panel, companion, viewer, score) ---------- */
+.studio-panel,
 .companion,
 .viewer,
-.score,
-.coverflow {
+.score {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -157,11 +156,10 @@ small,
     radial-gradient(circle at 15% 95%, rgb(55 129 252 / 0.45), transparent 45%),
     var(--midnight);
 }
-.hero::after,
+.studio-panel::after,
 .companion::after,
 .viewer::after,
-.score::after,
-.coverflow::after {
+.score::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -334,61 +332,11 @@ footer .drop {
 }
 
 /* ---------- Home hero ---------- */
-.hero {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  align-items: center;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  border-radius: var(--r-xl);
-  padding: clamp(2rem, 5vw, 4.5rem);
-  min-height: min(620px, 74vh);
-}
-.hero-kicker,
 .kicker {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
   line-height: 1;
-}
-.hero-kicker {
-  font-size: clamp(2rem, 3.6vw, 3rem);
-  color: var(--pale);
-}
-.hero h1 {
-  font-size: clamp(4.4rem, 10vw, 8.5rem);
-  line-height: 0.88;
-  letter-spacing: -0.06em;
-  margin: 0.15rem 0 1.2rem;
-}
-.hero .brand-period {
-  color: var(--sky);
-}
-.hero-content > p {
-  max-width: 36ch;
-  font-size: clamp(1.02rem, 1.4vw, 1.18rem);
-  line-height: 1.55;
-  color: var(--pale-2);
-}
-.hero-art {
-  position: relative;
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-}
-.hero-art .companion {
-  background: none;
-  border: 0;
-  border-radius: 0;
-  width: 100%;
-}
-.hero-art .companion::after {
-  display: none;
-}
-.hero-art .rendi-face {
-  max-height: 360px;
-}
-.hero-art .companion-caption {
-  border: 0;
 }
 
 /* ---------- Eyebrows & headings ---------- */
@@ -437,9 +385,6 @@ footer .drop {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-}
-.hero .actions {
-  margin-top: 2rem;
 }
 .primary,
 .secondary {
@@ -506,11 +451,33 @@ footer .drop {
   color: #fff;
 }
 
-/* ---------- Studio: cover flow ---------- */
-.studio {
-  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+/* ---------- Home: one panel with the cover flow ---------- */
+.studio-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: min(820px, calc(100vh - 140px));
+  padding: clamp(24px, 4vw, 48px);
+  border-radius: var(--r-xl);
 }
-.row-title,
+.studio-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
+}
+.studio-head .kicker {
+  color: var(--pale);
+}
+.studio-head h1 {
+  margin-top: 0.2rem;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  letter-spacing: -0.055em;
+}
+.studio-head .hint {
+  max-width: 34ch;
+  color: var(--pale-2);
+}
 .split,
 .bottom-row {
   display: flex;
@@ -518,18 +485,10 @@ footer .drop {
   justify-content: space-between;
   gap: 1.3rem;
 }
-.row-title {
-  align-items: flex-end;
-  margin-bottom: 1.2rem;
-}
-.row-title h2 {
-  margin-top: 0.15rem;
-  font-size: clamp(2.4rem, 4.6vw, 3.8rem);
-  letter-spacing: -0.05em;
-}
 .coverflow {
+  position: relative;
   border-radius: var(--r-xl);
-  min-height: 440px;
+  min-height: 420px;
   display: grid;
   place-items: center;
   perspective: 1200px;
@@ -1692,10 +1651,6 @@ details li {
   .round-link {
     display: none;
   }
-  .hero {
-    grid-template-columns: 1fr 0.8fr;
-    gap: 1.2rem;
-  }
   .form-pair {
     grid-template-columns: 1fr 1fr;
   }
@@ -1748,39 +1703,16 @@ details li {
     position: absolute;
     clip-path: inset(100%);
   }
-  .hero {
-    grid-template-columns: 1fr;
-    padding: 1.6rem 1.4rem 1.8rem;
+  .studio-panel {
+    padding: 20px 12px 12px;
     min-height: 0;
   }
-  .hero-art {
-    order: -1;
-  }
-  .hero-art .rendi-face {
-    max-height: 190px;
-  }
-  .hero h1 {
-    font-size: clamp(4rem, 22vw, 5.4rem);
-  }
-  .hero-content > p {
-    font-size: 1rem;
-  }
-  .hero .actions {
-    margin-top: 1.3rem;
-  }
-  .hero .actions > * {
-    flex: 1 1 100%;
-  }
-  .row-title {
-    display: block;
-  }
-  .row-title .hint {
-    display: block;
-    margin-top: 0.4rem;
+  .studio-head {
+    padding: 0 8px;
   }
   .coverflow {
     min-height: 420px;
-    padding: 28px 12px 84px;
+    padding: 28px 0 84px;
   }
   .cover-track {
     width: 220px;
@@ -1835,16 +1767,6 @@ details li {
   .companion-caption {
     text-align: left;
     padding: 0.65rem;
-  }
-  .hero-art .companion {
-    display: block;
-  }
-  .hero-art .rendi-face {
-    width: 100%;
-    height: 190px;
-  }
-  .hero-art .companion-caption {
-    text-align: center;
   }
   .progress {
     width: 100%;

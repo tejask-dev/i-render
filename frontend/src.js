@@ -215,19 +215,19 @@ function landing() {
 }
 function coverItems() {
   const saved = savedIndex().slice(0, 4).map((p) => ({ kind: "saved", id: p.id, name: p.name, note: "Saved build" }));
-  const starters = examples.map((e, i) => ({ kind: "example", id: e.id, name: e.name, note: e.blurb, sketch: i }));
+  const starters = examples.map((e) => ({ kind: "example", id: e.id, name: e.name, note: e.blurb }));
   const before = saved.length ? saved.reverse() : starters.splice(0, 1);
   return [...before, { kind: "new", name: "Start new project", note: "drop an idea, render it." }, ...starters];
 }
 function coverCard(item, i) {
-  const art = item.kind === "example" ? `<span class="sketch sketch-${item.sketch}" aria-hidden="true"></span>` : item.kind === "new" ? `<span class="cover-plus" aria-hidden="true">${icon("plus")}</span>` : `<span class="cover-saved" aria-hidden="true">${icon("box")}</span>`;
+  const art = item.kind === "new" ? `<span class="cover-plus" aria-hidden="true">${icon("plus")}</span>` : item.kind === "saved" ? `<span class="cover-saved" aria-hidden="true">${icon("box")}</span>` : "";
   const label = item.kind === "new" ? "New render" : item.kind === "saved" ? "Saved build" : "Starter";
   return `<button type="button" class="cover-card cover-${item.kind}" data-cover="${i}" data-cover-kind="${item.kind}" data-cover-id="${esc(item.id || "")}" aria-label="${esc((item.kind === "example" ? "Start with " : item.kind === "saved" ? "Open " : "") + item.name)}"><span class="cover-tag">${label}</span>${art}<span class="cover-text"><strong>${esc(item.name)}</strong><em>${esc(item.note)}</em></span></button>`;
 }
 function home() {
   const items = coverItems();
   coverIndex = items.findIndex((item) => item.kind === "new");
-  return `<section class="hero"><div class="hero-content"><div class="hero-kicker">drop an idea,</div><h1 tabindex="-1">render<span class="brand-period">.</span></h1><p>Turn a sketch and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start a build", "start", "primary on-dark")}${btn("Project notebook", "notebook", "secondary on-dark", "book-open")}</div></div><div class="hero-art">${companion()}</div></section><section class="studio" aria-labelledby="studio-title"><div class="row-title"><div><span class="kicker">good to see you,</span><h2 id="studio-title">Your renders.</h2></div><span class="hint">Choose a starter robot or reopen a saved build. Use ← → to browse.</span></div><div class="coverflow" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Projects"><div class="cover-track">${items.map(coverCard).join("")}</div><button type="button" class="cover-nav prev" data-cover-step="-1" aria-label="Previous project">${icon("arrow-left")}</button><button type="button" class="cover-nav next" data-cover-step="1" aria-label="Next project">${icon("arrow-right")}</button></div></section>`;
+  return `<section class="studio-panel" aria-labelledby="studio-title"><div class="studio-head"><div><span class="kicker">good to see you,</span><h1 id="studio-title" tabindex="-1">Your renders.</h1></div><p class="hint">Start a new project, pick a starter robot or reopen a saved build. Use ← → to browse.</p></div><div class="coverflow" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Projects"><div class="cover-track">${items.map(coverCard).join("")}</div><button type="button" class="cover-nav prev" data-cover-step="-1" aria-label="Previous project">${icon("arrow-left")}</button><button type="button" class="cover-nav next" data-cover-step="1" aria-label="Next project">${icon("arrow-right")}</button></div></section>`;
 }
 let coverIndex = 0;
 function layoutCover() {
