@@ -4,7 +4,7 @@ The [MIT license](LICENSE) covers Tejass Kaushik’s original software contribut
 
 ## Browser distribution
 
-The production browser bundle uses Three.js 0.186.0 (MIT), Lucide Static 0.468.0 (ISC, with Feather portions under MIT), Bricolage Grotesque and DM Sans (Fontsource packages 5.3.0, SIL Open Font License 1.1), and a Vite 7.3.8 preload helper (MIT). The build copies all six copyright and permission notices into the root of the distributed site. Retain that file when moving the built frontend. [Complete notices](frontend/public/THIRD_PARTY_LICENSES.txt) · [Locked npm dependencies](frontend/package-lock.json)
+The production browser bundle uses Three.js 0.186.0 (MIT), Lucide Static 0.468.0 (ISC, with Feather portions under MIT), Space Grotesk, Inter and Instrument Serif (Fontsource packages 5.3.0, SIL Open Font License 1.1), and a Vite 7.3.8 preload helper (MIT). The build copies all seven copyright and permission notices into the root of the distributed site. Retain that file when moving the built frontend. [Complete notices](frontend/public/THIRD_PARTY_LICENSES.txt) · [Locked npm dependencies](frontend/package-lock.json)
 
 ## Python installation
 

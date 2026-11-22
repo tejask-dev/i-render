@@ -35,8 +35,8 @@ export function mountViewer(element, url, parts, selectPart) {
   setSpin(controls.autoRotate);
   controls.autoRotateSpeed = 0.8;
   controls.maxPolarAngle = Math.PI * 0.54;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9c2bd, 2.5));
-  const light = new THREE.DirectionalLight(0xfff2db, 2.7);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a4f8f, 2.4));
+  const light = new THREE.DirectionalLight(0xf2f6ff, 2.8);
   light.position.set(2, 4, 3);
   scene.add(light);
   const center = new THREE.Vector3();
@@ -44,7 +44,8 @@ export function mountViewer(element, url, parts, selectPart) {
     model,
     stopped = false,
     active,
-    hovered;
+    hovered,
+    focus = new Set();
   const allParts = new Set(parts.map((part) => part.id)),
     meshes = [];
   const fit = () => {
@@ -81,12 +82,18 @@ export function mountViewer(element, url, parts, selectPart) {
   resize.observe(element);
   function highlight() {
     for (const mesh of meshes) {
-      const on = mesh.userData.partId === active,
-        hover = mesh.userData.partId === hovered;
+      const id = mesh.userData.partId,
+        on = id === active,
+        hover = id === hovered,
+        step = focus.has(id),
+        faded = focus.size > 0 && !step && !on && !hover;
       if (mesh.material.emissive) {
-        mesh.material.emissive.setHex(on ? 0xb65d21 : hover ? 0x5a4a20 : 0);
-        mesh.material.emissiveIntensity = on ? 0.45 : 0.27;
+        mesh.material.emissive.setHex(on ? 0x1951fc : hover ? 0x0b2cb1 : step ? 0x3781fc : 0);
+        mesh.material.emissiveIntensity = on ? 0.45 : step ? 0.35 : 0.27;
       }
+      mesh.material.transparent = faded || mesh.userData.baseTransparent;
+      mesh.material.opacity = faded ? 0.28 : mesh.userData.baseOpacity;
+      mesh.material.depthWrite = !faded;
     }
   }
   function releaseModel(root) {
@@ -117,6 +124,8 @@ export function mountViewer(element, url, parts, selectPart) {
         mesh.material = (
           Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
         ).clone();
+        mesh.userData.baseOpacity = mesh.material.opacity;
+        mesh.userData.baseTransparent = mesh.material.transparent;
         meshes.push(mesh);
       });
       const box = new THREE.Box3().setFromObject(model);
@@ -132,8 +141,8 @@ export function mountViewer(element, url, parts, selectPart) {
       const grid = new THREE.GridHelper(
         side,
         Math.min(300, Math.round(side / 0.01)),
-        0xb1b7a5,
-        0xd6d8c9,
+        0x3781fc,
+        0x1b3a8c,
       );
       grid.position.set(center.x, box.min.y - 0.0003, center.z);
       scene.add(grid);
@@ -205,6 +214,10 @@ export function mountViewer(element, url, parts, selectPart) {
   return {
     select(id) {
       active = id;
+      highlight();
+    },
+    focus(ids) {
+      focus = new Set(ids || []);
       highlight();
     },
     dispose() {

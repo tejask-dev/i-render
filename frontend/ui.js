@@ -1,5 +1,5 @@
 const imports = import.meta.glob(
-  "/node_modules/lucide/icons/{arrow-right,arrow-left,arrow-up-right,volume-2,volume-x,book-open,pencil-ruler,pencil,box,boxes,check,plus,x,download,mic,upload,rotate-ccw,focus,minus,search,save,triangle-alert,chevron-right,move-3d,settings-2,lightbulb,component,eye,power,wand-sparkles}.svg",
+  "/node_modules/lucide/icons/{arrow-right,arrow-left,arrow-up-right,volume-2,volume-x,book-open,pencil-ruler,pencil,box,boxes,check,plus,x,download,mic,upload,rotate-ccw,focus,minus,search,save,triangle-alert,chevron-right,move-3d,settings-2,lightbulb,component,eye,power,wand-sparkles,pause,play}.svg",
   { eager: true, query: "?raw", import: "default" },
 );
 const icons = Object.fromEntries(
@@ -19,7 +19,7 @@ export const esc = (value) =>
   );
 export const pretty = (value) => String(value ?? "").replaceAll("_", " ");
 export const drop =
-  '<span class="drop" aria-hidden="true"><i></i><b></b></span>';
+  '<svg class="drop" viewBox="0 0 168 168" aria-hidden="true" focusable="false"><rect x="4" y="4" width="160" height="160" rx="44" fill="url(#ir-square)"/><rect x="4" y="4" width="160" height="160" rx="44" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><use href="#ir-drop-shape" fill="#fff" opacity=".6" filter="url(#ir-soft)"/><use href="#ir-drop-shape" fill="url(#ir-drop)"/><ellipse cx="66" cy="72" rx="5" ry="11" fill="#fff" opacity=".9" transform="rotate(24 66 72)"/><ellipse cx="72" cy="110" rx="7" ry="11" fill="#0B2CB1"/><ellipse cx="96" cy="110" rx="7" ry="11" fill="#0B2CB1"/></svg>';
 export const examples = [
   {
     id: "wheelbot",
@@ -49,8 +49,8 @@ export const examples = [
 export const exampleCards = (label) =>
   examples
     .map(
-      ({ id, name, blurb }, i) =>
-        `<button class="starter" data-example="${id}" aria-label="${esc(label + " " + name)}"><span class="sketch sketch-${i}" aria-hidden="true"></span><span class="starter-info"><strong>${name}</strong><small>${blurb}</small></span><span class="round-link">${icon("arrow-up-right")}</span></button>`,
+      ({ id, name, blurb }) =>
+        `<button class="starter" data-example="${id}" aria-label="${esc(label + " " + name)}"><span class="starter-info"><strong>${name}</strong><small>${blurb}</small></span><span class="round-link">${icon("arrow-up-right")}</span></button>`,
     )
     .join("");
 export const actionLabels = {

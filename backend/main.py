@@ -297,6 +297,15 @@ def reviewed_items(items, excluded_indices):
     return vision.distinct_detections(reviewed, preserve_indices=True)
 
 
+@app.get("/api/hardware")
+def hardware(spec_id: Text, brief_id: Text):
+    _, brief = store.get("brief", brief_id)
+    _, sketch = store.get("sketch", spec_id)
+    if sketch["brief_id"] and sketch["brief_id"] != brief_id:
+        raise HTTPException(409, "This sketch belongs to a different interview.")
+    return salvage.hardware(vision.with_requested_actions(sketch["spec"], brief))
+
+
 @app.post("/api/plan")
 def plan(req: PlanRequest):
     _, brief = store.get("brief", req.brief_id)
