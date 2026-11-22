@@ -1,5 +1,6 @@
-import "@fontsource-variable/bricolage-grotesque/wght.css";
-import "@fontsource-variable/dm-sans/wght.css";
+import "@fontsource-variable/space-grotesk/wght.css";
+import "@fontsource-variable/inter/wght.css";
+import "@fontsource/instrument-serif/400-italic.css";
 import "./style.css";
 import { createVoiceOutput } from "./voice.js";
 import { spokenCentimeters, spokenVibe } from "./dictation.js";
@@ -114,7 +115,7 @@ function updateVoiceButton() {
   button.innerHTML = icon(voiceOn ? "volume-2" : "volume-x") + ` <span>Voice ${voiceOn ? "on" : "off"}</span>`;
 }
 function companion() {
-  return `<aside class="companion" data-rendi data-state="idle" aria-label="Rendi, your on-screen build companion"><svg class="rendi-face" viewBox="0 0 320 290" aria-hidden="true"><ellipse class="rendi-shadow" cx="160" cy="266" rx="77" ry="10"/><g class="rendi-body"><path class="rendi-shell" d="M160 20C152 62 63 102 63 176a97 83 0 00194 0C257 102 168 62 160 20Z"/><path class="rendi-shine" d="M140 79c-31 28-53 52-56 78"/><rect class="rendi-mask" x="91" y="135" width="138" height="82" rx="35"/><g class="rendi-eyes"><rect x="115" y="156" width="21" height="33" rx="10"/><rect x="184" y="156" width="21" height="33" rx="10"/></g><path class="rendi-mouth" d="M149 197q11 8 22 0"/><circle class="rendi-cheek" cx="104" cy="193" r="6"/><circle class="rendi-cheek" cx="216" cy="193" r="6"/></g></svg><div class="companion-caption"><strong>Rendi</strong><span data-rendi-status role="status" aria-live="polite">Ready when you are</span></div></aside>`;
+  return `<aside class="companion" data-rendi data-state="idle" aria-label="Rendi, your on-screen build companion"><svg class="rendi-face" viewBox="0 0 168 168" aria-hidden="true" focusable="false"><ellipse class="rendi-shadow" cx="84" cy="156" rx="34" ry="5"/><g class="rendi-body"><use class="rendi-glow" href="#ir-drop-shape" filter="url(#ir-soft)"/><use class="rendi-shell" href="#ir-drop-shape"/><ellipse class="rendi-shine" cx="66" cy="72" rx="5" ry="11" transform="rotate(24 66 72)"/><g class="rendi-eyes"><ellipse cx="72" cy="110" rx="7" ry="11"/><ellipse cx="96" cy="110" rx="7" ry="11"/></g><path class="rendi-closed" d="M65 112 q7 -6 14 0 M89 112 q7 -6 14 0"/><ellipse class="rendi-mouth" cx="84" cy="130" rx="5" ry="2.5"/><ellipse class="rendi-cheek" cx="58" cy="124" rx="7" ry="4"/><ellipse class="rendi-cheek" cx="110" cy="124" rx="7" ry="4"/></g><path class="rendi-sparkle" d="M134 40 v16 M126 48 h16 M146 70 v10 M141 75 h10"/></svg><div class="companion-caption"><strong>Rendi</strong><span data-rendi-status role="status" aria-live="polite">Ready when you are</span></div></aside>`;
 }
 function updateCompanion() {
   const face = $("[data-rendi]");
@@ -205,8 +206,59 @@ function progress() {
   if (n === undefined) return "";
   return `<ol class="progress" aria-label="Build progress">${steps.map((step, i) => `<li class="${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}><span>${i < n ? icon("check") : i + 1}</span>${step}</li>`).join("")}</ol>`;
 }
+function coverItems() {
+  const saved = savedIndex().slice(0, 4).map((p) => ({ kind: "saved", id: p.id, name: p.name, note: "Saved build" }));
+  const starters = examples.map((e, i) => ({ kind: "example", id: e.id, name: e.name, note: e.blurb, sketch: i }));
+  const before = saved.length ? saved.reverse() : starters.splice(0, 1);
+  return [...before, { kind: "new", name: "Start new project", note: "drop an idea, render it." }, ...starters];
+}
+function coverCard(item, i) {
+  const art = item.kind === "example" ? `<span class="sketch sketch-${item.sketch}" aria-hidden="true"></span>` : item.kind === "new" ? `<span class="cover-plus" aria-hidden="true">${icon("plus")}</span>` : `<span class="cover-saved" aria-hidden="true">${icon("box")}</span>`;
+  const label = item.kind === "new" ? "New render" : item.kind === "saved" ? "Saved build" : "Starter";
+  return `<button type="button" class="cover-card cover-${item.kind}" data-cover="${i}" data-cover-kind="${item.kind}" data-cover-id="${esc(item.id || "")}" aria-label="${esc((item.kind === "example" ? "Start with " : item.kind === "saved" ? "Open " : "") + item.name)}"><span class="cover-tag">${label}</span>${art}<span class="cover-text"><strong>${esc(item.name)}</strong><em>${esc(item.note)}</em></span></button>`;
+}
 function home() {
-  return `<section class="hero"><div class="hero-content"><div class="eyebrow"><i></i>Robot workshop</div><h1 tabindex="-1">Build a robot<br>with <em>Rendi.</em></h1><p>Turn a sketch and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start a build", "start")}${btn("Project notebook", "notebook", "secondary", "book-open")}</div></div><div class="hero-art">${companion()}</div></section><section class="starter-section"><div class="row-title"><div><span class="eyebrow"><i></i>Sketchbook</span><h2>Start with a sketch</h2></div><span class="hint">Choose a starter robot to make your own.</span></div><div class="starters">${exampleCards("Start with")}</div></section>`;
+  const items = coverItems();
+  coverIndex = items.findIndex((item) => item.kind === "new");
+  return `<section class="hero"><div class="hero-content"><div class="hero-kicker">drop an idea,</div><h1 tabindex="-1">render<span class="brand-period">.</span></h1><p>Turn a sketch and the parts in your junk drawer into a 3D robot and a build plan.</p><div class="actions">${btn("Start a build", "start", "primary on-dark")}${btn("Project notebook", "notebook", "secondary on-dark", "book-open")}</div></div><div class="hero-art">${companion()}</div></section><section class="studio" aria-labelledby="studio-title"><div class="row-title"><div><span class="kicker">good to see you,</span><h2 id="studio-title">Your renders.</h2></div><span class="hint">Choose a starter robot or reopen a saved build. Use ← → to browse.</span></div><div class="coverflow" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Projects"><div class="cover-track">${items.map(coverCard).join("")}</div><button type="button" class="cover-nav prev" data-cover-step="-1" aria-label="Previous project">${icon("arrow-left")}</button><button type="button" class="cover-nav next" data-cover-step="1" aria-label="Next project">${icon("arrow-right")}</button></div></section>`;
+}
+let coverIndex = 0;
+function layoutCover() {
+  const cards = app.querySelectorAll(".cover-card");
+  cards.forEach((card, i) => {
+    const offset = i - coverIndex, distance = Math.abs(offset);
+    card.style.setProperty("--offset", offset);
+    card.style.setProperty("--distance", Math.min(distance, 3));
+    card.style.zIndex = String(10 - distance);
+    card.classList.toggle("is-center", offset === 0);
+    card.hidden = distance > 3;
+    card.tabIndex = offset === 0 ? 0 : -1;
+    card.setAttribute("aria-current", offset === 0 ? "true" : "false");
+  });
+  const prev = $(".cover-nav.prev"), next = $(".cover-nav.next");
+  if (prev) prev.disabled = coverIndex <= 0;
+  if (next) next.disabled = coverIndex >= cards.length - 1;
+}
+function stepCover(delta) {
+  const count = app.querySelectorAll(".cover-card").length;
+  const target = Math.max(0, Math.min(count - 1, coverIndex + delta));
+  if (target === coverIndex) return;
+  coverIndex = target;
+  layoutCover();
+}
+function openCover(card) {
+  const kind = card.dataset.coverKind, id = card.dataset.coverId;
+  if (kind === "example") return chooseExample(id);
+  if (kind === "saved") return void (location.href = "/project/" + encodeURIComponent(id));
+  const zoom = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (zoom) app.querySelector(".coverflow")?.classList.add("is-opening");
+  setTimeout(() => {
+    if (s.stage !== "home") return;
+    clearDraft();
+    setUrl("");
+    goto("interview");
+    say(question());
+  }, zoom ? 380 : 0);
 }
 const questions = [
   "How big is your robot?",
@@ -540,7 +592,7 @@ function render() {
     result,
     notebook,
   };
-  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I, Render home">${drop}<span>I, Render<span class="brand-period">.</span></span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I, Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
+  app.innerHTML = `<header><div class="topbar"><button class="brand" data-action="home" aria-label="I,Render home">${drop}<span>I,Render</span></button><nav aria-label="Main"><button class="nav-btn ${s.stage !== "notebook" ? "active" : ""}" data-action="workshop">${icon("pencil-ruler")} Workshop</button><button class="nav-btn ${s.stage === "notebook" ? "active" : ""}" data-action="notebook">${icon("book-open")} Notebook</button></nav>${voiceControls()}</div></header><main id="work" tabindex="-1">${progress()}${ranks[s.stage] > 0 ? `<div class="companion-dock">${companion()}</div>` : ""}<div id="notice" role="alert" ${s.error || configProblem || voiceNotice ? "" : "hidden"}>${esc(s.error || configProblem || voiceNotice)}</div>${s.stage === "loading" ? toolHead("Notebook", "Opening saved build…") : outer[s.stage]()}</main><footer><div>${drop}<b>I,Render</b></div>${ranks[s.stage] !== undefined && !s.projectId ? btn("Reset build", "reset", "text-btn", "rotate-ccw") : "<span>Rendi’s robot workshop</span>"}</footer>${s.busy ? `<div class="busy" role="status"><span class="spinner"></span><strong>${esc(s.busy)}</strong></div>` : ""}`;
   updateVoiceButton();
   updateCompanion();
   if (s.stage === "model" || s.stage === "result") {
@@ -565,6 +617,7 @@ function render() {
       });
   }
   if (s.stage === "drawer") tally();
+  if (s.stage === "home") layoutCover();
 }
 async function job(status, work) {
   if (s.busy) return;
@@ -1083,6 +1136,16 @@ app.addEventListener("submit", async (e) => {
 app.addEventListener("click", async (e) => {
   const t = e.target.closest("button");
   if (!t || t.disabled || (s.busy && t.dataset.action !== "voice")) return;
+  if (t.dataset.coverStep) return stepCover(Number(t.dataset.coverStep));
+  if (t.dataset.cover !== undefined) {
+    const i = Number(t.dataset.cover);
+    if (i !== coverIndex) {
+      coverIndex = i;
+      layoutCover();
+      return;
+    }
+    return openCover(t);
+  }
   if (t.dataset.example) {
     chooseExample(t.dataset.example);
     return;
@@ -1313,3 +1376,18 @@ window.addEventListener("hashchange", () => {
 });
 render();
 boot();
+app.addEventListener("keydown", (e) => {
+  if (!e.target.closest?.(".coverflow") || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+  e.preventDefault();
+  stepCover(e.key === "ArrowLeft" ? -1 : 1);
+  app.querySelector(".cover-card.is-center")?.focus({ preventScroll: true });
+});
+let coverWheel = 0;
+app.addEventListener("wheel", (e) => {
+  if (!e.target.closest?.(".coverflow") || Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 12) return;
+  e.preventDefault();
+  const now = performance.now();
+  if (now - coverWheel < 260) return;
+  coverWheel = now;
+  stepCover(e.deltaX > 0 ? 1 : -1);
+}, { passive: false });

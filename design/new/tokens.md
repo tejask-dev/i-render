@@ -1,40 +1,40 @@
-# Design tokens
+# Design tokens — Liquid Cobalt
 
-Implemented as CSS custom properties at the top of [frontend/style.css](../../frontend/style.css). Original values are in [../original/README.md](../original/README.md#visual-language-from-stylecss). Roles and contrast rationale: [SPEC.md §2](SPEC.md#2-design-system).
+Implemented as CSS custom properties at the top of [frontend/style.css](../../frontend/style.css). Source: the brand board `I,Render — Brand & UI.html`. Roles and contrast: [SPEC.md §2](SPEC.md#2-design-system). Original values: [../original/README.md](../original/README.md#visual-language-from-stylecss).
 
 ## Color
-| Token | Name | Value | Role |
-| --- | --- | --- | --- |
-| `--indigo` | Space Indigo | `#1f2041` | Page ground (dark) |
-| `--grape` | Vintage Grape | `#4b3f72` | Raised surfaces, glass tint, fog |
-| `--gold` | Golden Pollen | `#ffc857` | Primary action fill (indigo label), highlights |
-| `--cyan` | Dark Cyan | `#119da4` | Glow, lines, focus ring, links on dark |
-| `--slate` | Blue Slate | `#19647e` | Secondary fills, progress, 3D grid |
-| `--mist` | derived | `#eceaf5` | Body text |
-| `--mist-dim` | derived | `rgb(236 234 245 / .72)` | Secondary text |
-| `--line` | derived | `rgb(236 234 245 / .14)` | Hairlines, glass borders |
-| `--glass` | derived | `rgb(75 63 114 / .42)` + blur 16px | Glass panels |
-| `--success` / `--warning` / `--danger` | _tbd_ | | Must pass 4.5:1 on indigo |
+| Token | Value | Role |
+| --- | --- | --- |
+| `--midnight` | `#03195b` | Dark surfaces |
+| `--cobalt` | `#0b2cb1` | Hover/pressed primary, active text |
+| `--signal` | `#1951fc` | Primary action, links, kickers, focus |
+| `--sky` | `#3781fc` | Gradients, decoration |
+| `--frost` | `#eaf0ff` | Selected, soft panels |
+| `--ink` | `#0a0f1f` | Headlines, text |
+| `--bg` | `#f2f4fa` | App ground |
+| `--card` | `#ffffff` | Cards |
+| `--body` | `#2a3352` | Body text |
+| `--sub` | `#4a5578` | Secondary text |
+| `--line` / `--line-strong` | `#dde4f5` / `#b9c6ea` | Borders |
+| `--pale` / `--pale-2` | `#bfd6ff` / `#d9e4ff` | Text on dark |
+| `--glass` / `--glass-line` | white 12% / white 30% | Glass on dark |
+| `--danger` / `--danger-bg` | `#b42318` / `#fef0ee` | Safety |
+| `--warn` / `--warn-bg` | `#8a5a00` / `#fff4dc` | Notices |
 
-```json
-{"Space Indigo":"1f2041","Vintage Grape":"4b3f72","Golden Pollen":"ffc857","Dark Cyan":"119da4","Blue Slate":"19647e"}
-```
+Mascot drop gradient: `#FFFFFF → #DCE8FF → #7FA9FF` (radial). App-icon square: `#3781FC → #0B2CB1` (linear). Both are defined once in [frontend/index.html](../../frontend/index.html) as `#ir-drop`, `#ir-square`, `#ir-soft`, `#ir-drop-shape`.
 
 ## Typography
-| Role | Font | Weight / style |
+| Token | Font | Weights |
 | --- | --- | --- |
-| Display / headings | Petrona | 500–600 |
-| Subheading / emphasis | Karla | 600 italic |
-| Body | Karla | 400 |
+| `--display` | Space Grotesk Variable | 700 (headlines), 600 (eyebrows) |
+| `--serif` | Instrument Serif | 400 italic |
+| `--text` | Inter Variable | 400–600 |
 
-At most 4 font files, `font-display: swap`, bundled locally.
+## Shape
+`--r-sm` 14 · `--r` 22 · `--r-lg` 28 · `--r-xl` 32 · pills 999.
 
-## Spacing, radius, elevation
-- Spacing scale: 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64
-- Radius: 10 (controls) · 16 (cards/panels) · 28 (hero glass) · 999 (pills)
-- Elevation on dark: lighter surface + glass, not drop shadows
+## Texture
+`--grain`: SVG fractal noise, `mix-blend-mode: overlay`, 30% on dark panels.
 
 ## Motion
-- Hover 150ms in / 120ms out · press 90ms · panel 200ms · travel 240ms · view < 400ms
-- Ease `cubic-bezier(.2,.8,.2,1)`; enter `cubic-bezier(.22,1,.36,1)`; loops linear
-- Respect `prefers-reduced-motion`.
+`--ease` `cubic-bezier(.2,.8,.2,1)`. Hover 150ms · press 90ms · cover-flow travel 420ms · zoom-out to new project 380ms. Everything rests under `prefers-reduced-motion`.

@@ -35,8 +35,8 @@ export function mountViewer(element, url, parts, selectPart) {
   setSpin(controls.autoRotate);
   controls.autoRotateSpeed = 0.8;
   controls.maxPolarAngle = Math.PI * 0.54;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9c2bd, 2.5));
-  const light = new THREE.DirectionalLight(0xfff2db, 2.7);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a4f8f, 2.4));
+  const light = new THREE.DirectionalLight(0xf2f6ff, 2.8);
   light.position.set(2, 4, 3);
   scene.add(light);
   const center = new THREE.Vector3();
@@ -84,7 +84,7 @@ export function mountViewer(element, url, parts, selectPart) {
       const on = mesh.userData.partId === active,
         hover = mesh.userData.partId === hovered;
       if (mesh.material.emissive) {
-        mesh.material.emissive.setHex(on ? 0xb65d21 : hover ? 0x5a4a20 : 0);
+        mesh.material.emissive.setHex(on ? 0x1951fc : hover ? 0x0b2cb1 : 0);
         mesh.material.emissiveIntensity = on ? 0.45 : 0.27;
       }
     }
@@ -132,8 +132,8 @@ export function mountViewer(element, url, parts, selectPart) {
       const grid = new THREE.GridHelper(
         side,
         Math.min(300, Math.round(side / 0.01)),
-        0xb1b7a5,
-        0xd6d8c9,
+        0x3781fc,
+        0x1b3a8c,
       );
       grid.position.set(center.x, box.min.y - 0.0003, center.z);
       scene.add(grid);

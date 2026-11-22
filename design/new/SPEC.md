@@ -1,6 +1,6 @@
-# I, Render — New design reference (v0 draft)
+# I,Render — New design reference (v1)
 
-What the redesigned app does, screen by screen, and how each function maps onto the code that already works. Status: **draft, pending the open questions in §9.** The original app is documented in [../original/REFERENCE.md](../original/REFERENCE.md).
+What the redesigned app does, screen by screen, and how each function maps onto the code that already works. Status: **v1 — visual system implemented (Liquid Cobalt); the larger flow changes (§1, §3–5) are still pending the open questions in §9.** The original app is documented in [../original/REFERENCE.md](../original/REFERENCE.md).
 
 Jump to: [Journey](#1-journey) · [Design system](#2-design-system) · [Screens](#3-screens-and-their-functions) · [Rendi](#4-rendi-the-agent) · [Generation moments](#5-generation-moments-the-swirl) · [Feature mapping](#6-feature-mapping-old--new) · [Motion & effects rules](#7-motion-effects-and-performance-rules) · [Accessibility](#8-accessibility) · [Open questions](#9-open-questions)
 
@@ -33,41 +33,48 @@ flowchart LR
 
 ## 2. Design system
 
-### Palette
+**Source of truth:** the brand board `I,Render — Brand & UI.html` (repo root): brand sheet, grain poster, app icon + glass dock, mobile onboarding, mascot expressions, studio dashboard. Implemented in [frontend/style.css](../../frontend/style.css). Exact values are in [tokens.md](tokens.md).
+
+> The earlier indigo/gold palette (Space Indigo, Vintage Grape, Golden Pollen, Dark Cyan, Blue Slate) and Petrona/Karla type are **superseded** by this brand.
+
+### Palette — Liquid Cobalt
 | Token | Name | Hex | Role |
 | --- | --- | --- | --- |
-| `--indigo` | Space Indigo | `#1f2041` | App ground (dark), deepest surface |
-| `--grape` | Vintage Grape | `#4b3f72` | Raised surfaces, glass tint, fog |
-| `--gold` | Golden Pollen | `#ffc857` | Primary action, highlights, Rendi's attention, "selected" |
-| `--cyan` | Dark Cyan | `#119da4` | Glow, links on dark, focus ring, particle lines, generation swirl |
-| `--slate` | Blue Slate | `#19647e` | Secondary buttons, progress fill, 3D grid |
-| `--mist` | *(derived)* | `#eceaf5` | Body text on dark (off-white, per dark-mode guidance) |
-| `--mist-dim` | *(derived)* | `mist @ 72%` | Secondary text |
-| `--line` | *(derived)* | `mist @ 14%` | Hairlines, glass borders |
+| `--midnight` | Midnight | `#03195B` | Dark hero surfaces (hero, Rendi, 3D stage, score, cover flow, busy pill) |
+| `--cobalt` | Cobalt | `#0B2CB1` | Pressed/hover primary, active nav text, mascot eyes |
+| `--signal` | Signal | `#1951FC` | Primary action, links, italic kickers, focus ring, glow |
+| `--sky` | Sky | `#3781FC` | Gradients, detection boxes, accents (decoration only, not body text) |
+| `--frost` | Frost | `#EAF0FF` | Selected pills, active nav, soft panels |
+| `--ink` | Ink | `#0A0F1F` | Headlines, body on light |
 
-Derived semantic colours (success, warning, danger) still to define. They must pass contrast on indigo and must not rely on colour alone.
+App ground `#F2F4FA` with white cards (radius 28). Dark panels = Midnight + Signal radial glow + SVG grain (overlay, 30%).
 
-**Contrast (WCAG):**
-- Readable: Gold on Indigo 10.2 ✅ · Mist on Indigo 13.2 ✅ · Mist on Grape 7.8 ✅ · Gold on Grape 6.1 ✅ · Cyan on Indigo 4.8 ✅ (AA body text, barely) · Indigo on Gold 10.2 ✅ (button label)
-- Avoid for text: White on Cyan 3.3 ❌ (large text or icons only) · Cyan on Grape 2.8 ❌ · Slate on Indigo 2.4 ❌ · Grape on Indigo 1.7 ❌
-
-→ **Primary button = gold fill + indigo label.** Cyan is for light, lines and glow, never a text-bearing fill.
+**Contrast:** white on Signal 5.8 ✅ · white on Cobalt 10.5 ✅ · Signal on white 5.8 ✅ · `#4A5578` secondary text on ground 6.7 ✅ · pale `#BFD6FF` on Midnight 11.0 ✅ · Sky on Midnight 4.4 (large text or decoration only) · white on Sky 3.7 ❌ for small text.
 
 ### Typography
-| Role | Face | Weight / style | Use |
-| --- | --- | --- | --- |
-| Display / headings | **Petrona** | 500–600 | h1–h3, hero, step titles, project names |
-| Subheading / emphasis | **Karla** | 600 *italic* | Eyebrows, Rendi's voice lines, labels that need warmth |
-| Body | **Karla** | 400 | Paragraphs, inputs, lists |
+| Role | Face | Use |
+| --- | --- | --- |
+| Headlines | **Space Grotesk** 700, tight tracking (−0.045 to −0.06em) | h1–h3, wordmark, cover cards, numbers |
+| The twist | **Instrument Serif** *italic* 400 | Kickers above headlines ("drop an idea,", "good to see you,", "Project brief · 1 of 3"), Rendi's status, descriptions |
+| Everything you read | **Inter** 400–600 | Body, labels, buttons, inputs |
 
-Budget (taste-skill perf): ≤ 2 families, ≤ 4 font files, `font-display: swap`, ship only the used weights. Fonts are bundled locally (`@fontsource`) so the fair demo works offline, replacing Bricolage Grotesque and DM Sans.
+Three families, bundled locally with `@fontsource` (offline-safe at the fair).
 
-### Surfaces
-- **Ground:** indigo, with the particle network (landing) or a soft fog (Render) behind it.
-- **Glass panel:** grape tint at ~35–50% + `backdrop-filter: blur(14–20px)`, 1px `--line` border, inner top highlight. Give text-heavy panels an opaque fallback when `backdrop-filter` isn't supported.
-- **Radius:** one scale (e.g. 10 / 16 / 28 px); **one** button pair (gold primary, outline secondary); **one** card style.
+### Shapes, glass and motion
+- Radius: 14 controls · 22 small cards · 28 cards · 32 hero panels · pills 999.
+- Buttons are pills: **Signal** primary, white outline secondary. On dark: **white** primary with Midnight text, **glass** secondary.
+- Glass: `rgba(255,255,255,.12–.16)` + `backdrop-filter: blur(20px)` + 1px white 30–45% border + inner top highlight. Used for cover-flow centre card, viewer controls and secondary buttons on dark.
+- Hover steps up 1px, press sinks and scales .985; cards lift 2–3px.
 
----
+### Rendi — "the drop"
+Brand drop SVG (radial white→`#7FA9FF` fill, soft white glow, shine). States map to the brand's expressions:
+| App state | Expression |
+| --- | --- |
+| idle | Idle: open eyes, slow float, blink |
+| listening | glow brightens, cheeks, breathing |
+| thinking | **Rendering**: eyes shut arcs + twinkling sparkles |
+| speaking | small mouth pulses |
+| *(future)* success | **Delighted**: ^ ^ eyes + cheeks |
 
 ## 3. Screens and their functions
 
@@ -76,7 +83,7 @@ Budget (taste-skill perf): ≤ 2 families, ≤ 4 font files, `font-display: swap
 | --- | --- | --- |
 | Typing headline | Types **"I, Render"**, pauses, deletes, retypes **"what's creative?"** | Respect reduced motion: show the final text, no typing |
 | Rotating line | Under the headline, a phrase cycles periodically | Copy TBD (Q3). Needs a pause control if it runs past 5 s |
-| Particle network | Thin, glass-like ASCII-character nodes joined by cyan lines; nodes drift and react to the pointer (attract or repel within a radius) | Canvas 2D; 30 fps cap; pixel ratio ≤ 1.5; off on touch; still frame under reduced motion; pause when the tab is hidden |
+| Particle network | Thin, glass-like ASCII-character nodes joined by Signal/Sky lines; nodes drift and react to the pointer (attract or repel within a radius) | Canvas 2D; 30 fps cap; pixel ratio ≤ 1.5; off on touch; still frame under reduced motion; pause when the tab is hidden |
 | Enter | Button / Enter key / scroll → Cover flow | |
 | Global | Voice on/off, voice output | Carried over from the header |
 
@@ -137,9 +144,9 @@ Layout: **left** = 3D model (large) · **top right** = assembly instructions · 
 ## 4. Rendi (the agent)
 | Function | Behaviour |
 | --- | --- |
-| Form | A **3D blob** (three.js, metaball or noise-displaced sphere) in the palette's cyan/gold, replacing the SVG droplet |
+| Form | A **3D blob** (three.js, metaball or noise-displaced sphere) in the brand's drop style (white→`#7FA9FF` glass), evolving the SVG drop now in use |
 | Movement | Drifts around the screen to sit near whatever it's talking about; never covers the primary action or text being read |
-| States | idle (slow wobble, blink) · listening (breathing, cyan glow) · thinking (swirl inside) · speaking (pulses with voice) · observing (leans toward the element it's commenting on) |
+| States | idle (slow wobble, blink) · listening (breathing, Signal glow) · thinking (swirl inside) · speaking (pulses with voice) · observing (leans toward the element it's commenting on) |
 | Observations | Short remarks tied to user actions ("That arm looks long for a 10 cm robot, want me to shorten it?"). **Source TBD (Q9)**: scripted rules vs an LLM |
 | Voice | Speaks its lines when Voice is on (browser / ElevenLabs), as today |
 | Controls | Mute, hide/minimise, and "ask Rendi" if it becomes conversational |
@@ -153,7 +160,7 @@ Conversational-UX rules: one clear thing per line; say what response is expected
 | Function | Behaviour |
 | --- | --- |
 | Trigger | Step 2 → model generation; Step 3 → plan generation |
-| Visual | Particles / the user's drawing spiral into a vortex (cyan → gold), Rendi at the centre in "thinking" |
+| Visual | Particles / the user's drawing spiral into a vortex (Sky → white, like the grain poster's ring), Rendi at the centre in "thinking" |
 | Feedback | Within 100 ms acknowledge; at 1–10 s show stage text ("Reading your lines…", "Shaping parts…"); over 10 s show progress or an estimate plus a cancel/back option (loading-states, Doherty) |
 | Result | The swirl resolves *into* the result (the model materialises), not a cut |
 | Failure | The swirl settles, with a plain error, retry, and the local fallback when Gemini fails |
@@ -194,10 +201,9 @@ Adapted from **taste-skill** (motion, perf, effects) and **designer-skills** (da
 - **WebGL:** ≤ 4 live contexts (Rendi blob + 3D model + swirl count). Particles/noise at half resolution and ≤ 30 fps, pixel ratio ≤ 1.5. Each effect keeps a still fallback.
 - **Budgets:** JS ≤ 450 KiB parsed (three.js is the main cost), fonts ≤ 4 files, CLS < 0.1, animate only transform and opacity.
 - **Glass on text:** blur behind panels is fine, but body text sits on a ≥ 4.5:1 effective background. Never put blend modes on text.
-- **Note:** taste-skill says "never violet". Vintage Grape is a violet, and **your palette overrides this**; it stays a surface colour, not a neon accent.
 
 ## 8. Accessibility
-- Contrast as in §2. Focus ring is a 3px cyan outline, offset 3px, on every control.
+- Contrast as in §2. Focus ring is a 3px Signal outline, offset 3px, on every control.
 - Keyboard: cover flow ← →, Enter selects; Render steps are forms; the 3D viewer keeps its arrow/+/−/Home keys.
 - Live regions for Rendi's lines and generation status; focus moves to each step's heading.
 - Tap targets ≥ 44px. Keep the skip link. Respect `prefers-reduced-motion`.
@@ -206,7 +212,7 @@ Adapted from **taste-skill** (motion, perf, effects) and **designer-skills** (da
 ## 9. Open questions
 Tracked here and in the chat discussion. Answers become decisions in this doc.
 
-1. **Theme:** is the whole app dark (indigo), or only the landing?
+1. **Theme:** the brand mixes a light app ground with Midnight hero panels (as built). Should the landing go fully dark?
 2. **Navigation:** after the landing, is the Cover flow the "home"? Is there a persistent top bar (logo, voice, back to gallery)? Can users jump back between Render steps?
 3. **Landing copy:** what phrases cycle below "what's creative?"? Does "I, Render" retype once or loop?
 4. **Junk-drawer salvage:** the current core feature (scan drawer → match donor parts) has no clear slot. Fold it into Step 3 ("check what you already have") or the Playground inventory, or drop it?
@@ -217,6 +223,6 @@ Tracked here and in the chat discussion. Answers become decisions in this doc.
 9. **Rendi's observations:** scripted rule-based lines (offline, safe) or LLM-generated (which model, online)?
 10. **Gemini:** the README notes Gemini's terms exclude apps likely used by under-18s, and this is a youth-outreach demo. Should the swirl be provider-agnostic, with local Qwen as the default?
 11. **Model preview:** after Step 2's swirl, does the user see the 3D model before Step 3, or only in the Playground?
-12. **Fonts:** OK to bundle Petrona/Karla locally (offline-safe) rather than load from Google Fonts?
+12. **Fonts:** ~~resolved~~ Space Grotesk, Instrument Serif and Inter are bundled locally.
 13. **Stack:** stay vanilla JS + Vite + three.js (current), or move to a framework (React) for the bigger UI?
 14. **Deadline / priority:** what must be done for the next demo, and in what order?
