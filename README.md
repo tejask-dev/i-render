@@ -1,6 +1,6 @@
 # I, Render
 
-Rendi helps a maker turn a robot drawing into a dimensioned 3D model and match the design to candidate parts in a junk drawer. The laptop runs the workbench, vision, geometry and project notebook locally.
+Rendi helps a maker turn a robot drawing into a dimensioned 3D model and match the design to candidate parts in a junk drawer. The laptop runs the workbench, vision, geometry, and project notebook locally.
 
 [Team handoff](STATUS.md) · [79-second rehearsal](demo/I-Render-walkthrough.mp4) · [31-minute wheel fit check](hardware/slicing/Sketch-wheel-fit-P1S.3mf) · [Rendi enclosure](hardware/slicing/Rendi-P1S.3mf)
 
