@@ -49,8 +49,8 @@ export const examples = [
 export const exampleCards = (label) =>
   examples
     .map(
-      ({ id, name, blurb }, i) =>
-        `<button class="starter" data-example="${id}" aria-label="${esc(label + " " + name)}"><span class="sketch sketch-${i}" aria-hidden="true"></span><span class="starter-info"><strong>${name}</strong><small>${blurb}</small></span><span class="round-link">${icon("arrow-up-right")}</span></button>`,
+      ({ id, name, blurb }) =>
+        `<button class="starter" data-example="${id}" aria-label="${esc(label + " " + name)}"><span class="starter-info"><strong>${name}</strong><small>${blurb}</small></span><span class="round-link">${icon("arrow-up-right")}</span></button>`,
     )
     .join("");
 export const actionLabels = {

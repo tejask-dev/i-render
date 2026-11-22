@@ -557,14 +557,6 @@ footer .drop {
   font-size: 0.75rem;
   font-weight: 600;
 }
-.cover-card .sketch {
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  border: 0;
-  border-radius: 16px;
-  background-color: #fff;
-}
 .cover-plus,
 .cover-saved {
   flex: 1;
@@ -647,26 +639,6 @@ footer .drop {
   transform: translateY(-2px);
   border-color: var(--line-strong);
   box-shadow: 0 14px 30px rgb(3 25 91 / 0.1);
-}
-.sketch {
-  flex: none;
-  display: block;
-  height: 100%;
-  min-height: 96px;
-  width: 31%;
-  border-right: 1px solid var(--line);
-  background-image: url("/sketches.webp");
-  background-size: 300% 100%;
-  background-repeat: no-repeat;
-}
-.sketch-0 {
-  background-position: 0 50%;
-}
-.sketch-1 {
-  background-position: 50% 50%;
-}
-.sketch-2 {
-  background-position: 100% 50%;
 }
 .starter-info {
   display: flex;
@@ -1154,10 +1126,6 @@ dd {
 }
 .column .starter {
   min-height: 74px;
-}
-.column .sketch {
-  width: 90px;
-  min-height: 80px;
 }
 
 /* ---------- Upload ---------- */
@@ -1734,10 +1702,6 @@ details li {
   .starter {
     min-height: 75px;
   }
-  .sketch {
-    max-width: 98px;
-    min-height: 80px;
-  }
   .round-link {
     display: grid;
   }
@@ -1931,17 +1895,6 @@ details li {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem;
-}
-.sketch-reference {
-  margin-top: 1rem;
-}
-.sketch-reference img {
-  display: block;
-  max-width: 100%;
-  max-height: 28rem;
-  object-fit: contain;
-  margin: 0.8rem auto 0;
-  border-radius: var(--r-sm);
 }
 .exclude-item {
   margin: 0.35rem 0;
