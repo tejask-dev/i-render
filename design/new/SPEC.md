@@ -132,7 +132,13 @@ Implemented in `interview()` / `confirmBrief()` in [frontend/src.js](../../front
 | Generate | Triggers the **swirl** (§5) while the model is generated | `POST /api/sketch` |
 | Provider | On this Mac / Gemini choice, labelled before sending | See Q10 |
 
-### 4 · Render · Step 3 — Hardware
+### 4 · Render · Step 3 — Hardware — ✅ built
+`hardwareScreen()` in [frontend/src.js](../../frontend/src.js), fed by the new read-only **`GET /api/hardware?spec_id&brief_id`** (`salvage.hardware()` in [backend/salvage.py](../../backend/salvage.py)). Its counts come from `required_units`, the same as the plan's.
+- Flow: Model → **Parts** (this step) → Build. **Build it** makes an empty drawer inventory if none exists, then plans under the swirl. **Check my junk drawer first** keeps the salvage path (drawer → review → Match my parts), with **Back to parts** on the drawer screen. *(Answers Q4 for now: salvage is an optional detour.)*
+- **Your parts list:** each component with qty, the abilities it serves, the model parts that hold it, a buying suggestion, and Add to cart / quantity stepper. **Add everything** fills the cart.
+- **Ideas to grow it:** every ability not yet chosen (Walk, Make sound, Grab, Spin, Sense distance, Display a face, Move air) with its parts; **Add parts** puts them in the cart. The model is not changed.
+- **Cart** (sticky): quantities, Clear, **Copy list**, **Download list** (.txt). A list only: no prices, links or checkout *(answers Q5 for now)*. Saved per build in `localStorage` (`irender-cart-…`) and carried over on save.
+- Playground: to-source rows show **In cart** when that part is in the cart.
 | Function | Behaviour | Source |
 | --- | --- | --- |
 | Recommendations | Cards for what the project could involve: components per function (motors, LEDs, sensors…) and variations ("make it walk instead?") | `data/function_requirements.json`, plan `to_source`, `alternatives` |

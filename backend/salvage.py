@@ -182,6 +182,27 @@ def required_units(spec: dict) -> list[dict]:
     return slots
 
 
+def hardware(spec: dict) -> dict:
+    """Components this model needs, grouped by kind, plus parts for abilities it could gain."""
+    needs = {}
+    for slot in required_units(spec):
+        row = needs.setdefault(slot["need"], {"need": slot["need"], "name": _name(slot["need"]), "qty": 0,
+                                              "functions": [], "parts": [], "suggestion": SUGGESTIONS[slot["need"]]})
+        row["qty"] += 1
+        row["functions"] += [name for name in slot["functions"] if name not in row["functions"]]
+        if slot["part_label"] and slot["part_label"] not in row["parts"]:
+            row["parts"].append(slot["part_label"])
+    have = {function["name"] for function in spec["functions"]}
+    extras = [
+        {"function": name, "needs": [
+            {"need": need, "name": _name(need), "qty": qty, "suggestion": SUGGESTIONS[need]}
+            for need, qty in components.items() if not (need in SHARED and need in needs)
+        ]}
+        for name, components in REQUIREMENTS.items() if name not in have
+    ]
+    return {"needs": list(needs.values()), "extras": extras}
+
+
 def _item_id(item, index):
     """A stored id when the inventory has one. Older inventories are stable lists, so the index stands in."""
     for key in ("item_id", "id"):

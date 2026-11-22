@@ -52,12 +52,13 @@ let s = defaults(),
   recognition,
   recording,
   camera;
-const steps = ["Brief", "Sketch", "Model", "Drawer", "Build"];
+const steps = ["Brief", "Sketch", "Model", "Parts", "Build"];
 const ranks = {
   interview: 0,
   confirm: 0,
   sketch: 1,
   model: 2,
+  hardware: 3,
   drawer: 3,
   inventory: 3,
   result: 4,
@@ -429,7 +430,7 @@ function unresolvedNotice() {
 }
 function modelView() {
   const spec = s.model.spec;
-  return `${toolHead(presentedSource(s.model.source), spec.robot_name || s.brief.project_name, "Select a part to inspect its estimated dimensions. Measure the physical parts before printing.")}${unresolvedNotice()}${modelPanel()}${sketchReference()}${Number(spec.confidence) < 0.3 ? '<p class="safety">Low confidence. Check the shapes and dimensions against your sketch before printing.</p>' : ""}<div class="bottom-row"><div class="actions">${btn("Open the drawer", "drawer")}${downloadLink("STL")}${downloadLink("GLB")}</div><details class="assumptions"><summary>Model assumptions (${spec.assumptions.length})</summary><ul>${spec.assumptions.map((a) => `<li>${esc(a)}</li>`).join("") || "<li>No model assumptions recorded.</li>"}</ul></details></div>`;
+  return `${toolHead(presentedSource(s.model.source), spec.robot_name || s.brief.project_name, "Select a part to inspect its estimated dimensions. Measure the physical parts before printing.")}${unresolvedNotice()}${modelPanel()}${sketchReference()}${Number(spec.confidence) < 0.3 ? '<p class="safety">Low confidence. Check the shapes and dimensions against your sketch before printing.</p>' : ""}<div class="bottom-row"><div class="actions">${btn("Choose parts", "hardware")}${downloadLink("STL")}${downloadLink("GLB")}</div><details class="assumptions"><summary>Model assumptions (${spec.assumptions.length})</summary><ul>${spec.assumptions.map((a) => `<li>${esc(a)}</li>`).join("") || "<li>No model assumptions recorded.</li>"}</ul></details></div>`;
 }
 function downloadLink(kind) {
   const url = s.model[kind === "STL" ? "stl_url" : "glb_url"];
@@ -487,9 +488,83 @@ function selectPart(id) {
   }
   viewer?.select(id);
 }
+function cartKey() {
+  return s.projectId ? "p:" + s.projectId : "b:" + (s.brief_id || "draft");
+}
+function cartItems() {
+  const key = cartKey();
+  if (s.cart) {
+    if (s.cart.key !== key) {
+      s.cart.key = key;
+      saveCart();
+    }
+    return s.cart.items;
+  }
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem("irender-cart-" + key) || "{}");
+  } catch {}
+  s.cart = { key, items: saved.items || {}, ideas: saved.ideas || [] };
+  return s.cart.items;
+}
+function saveCart() {
+  try {
+    localStorage.setItem("irender-cart-" + s.cart.key, JSON.stringify({ items: s.cart.items, ideas: s.cart.ideas }));
+  } catch {}
+}
+function setCart(need, qty) {
+  const items = cartItems();
+  if (qty > 0) items[need] = Math.min(qty, 20);
+  else delete items[need];
+  saveCart();
+}
+function partName(need) {
+  const all = [...(s.hardware?.needs || []), ...(s.hardware?.extras || []).flatMap((e) => e.needs)];
+  return all.find((n) => n.need === need)?.name || pretty(need);
+}
+const plural = (name, qty) => `${qty} ${name}${qty > 1 && !name.endsWith("s") ? "s" : ""}`;
+function cartList() {
+  return Object.entries(cartItems()).map(([need, qty]) => `${plural(partName(need), qty)}`).join("\n");
+}
+async function loadHardware() {
+  const key = s.model?.spec_id + ":" + s.brief_id;
+  if (s.hardware?.key === key) return;
+  s.hardware = { key, loading: true, needs: [], extras: [] };
+  try {
+    const data = await request(`/hardware?spec_id=${encodeURIComponent(s.model.spec_id)}&brief_id=${encodeURIComponent(s.brief_id)}`);
+    s.hardware = { key, ...data };
+  } catch (e) {
+    s.hardware = { key, needs: [], extras: [], error: e.message || "Parts list unavailable." };
+  }
+  if (s.stage === "hardware") render();
+}
+function cartControl(need, qty) {
+  const have = cartItems()[need] || 0;
+  if (!have) return `<button type="button" class="secondary hw-add" data-cart-set="${esc(need)}" data-qty="${qty}">${icon("plus")} Add to cart</button>`;
+  return `<div class="hw-stepper" role="group" aria-label="${esc(partName(need))} in cart"><button type="button" data-cart-set="${esc(need)}" data-qty="${have - 1}" aria-label="One fewer">${icon("minus")}</button><output>${have}</output><button type="button" data-cart-set="${esc(need)}" data-qty="${have + 1}" aria-label="One more">${icon("plus")}</button></div>`;
+}
+function hardwareScreen() {
+  const hw = s.hardware || { loading: true, needs: [], extras: [] };
+  const abilities = s.brief.must_do.map((k) => actionLabels[k] || pretty(k));
+  const head = toolHead("Hardware", "What will it need?", `Parts for ${abilities.join(" and ").toLowerCase() || "your robot"}. Add what you’ll buy to your cart, or check your junk drawer first: it may already have some.`);
+  if (hw.loading) return `${head}<p class="hw-loading">Rendi is sorting the parts list…</p>`;
+  const rows = hw.needs.map((n) => `<li class="hw-row"><div><b>${esc(capital(plural(n.name, n.qty)))}</b><span class="hw-tags">${n.functions.map((f) => `<span class="source-tag">${esc(actionLabels[f] || pretty(f))}</span>`).join("")}</span><p>${esc(n.suggestion)}</p>${n.parts.length ? `<small>Model · ${esc(n.parts.join(", "))}</small>` : ""}</div>${cartControl(n.need, n.qty)}</li>`).join("");
+  const ideas = hw.extras.map((e) => {
+    cartItems();
+    const added = s.cart.ideas.includes(e.function);
+    return `<article class="hw-idea"><strong>${esc(actionLabels[e.function] || pretty(e.function))}</strong><p>${esc(e.needs.map((n) => plural(n.name, n.qty)).join(" · ") || "Uses parts already on your list")}</p><button type="button" class="${added ? "text-btn" : "quiet"}" data-cart-idea="${esc(e.function)}" ${added || !e.needs.length ? "disabled" : ""}>${added ? icon("check") + " In cart" : icon("plus") + " Add parts"}</button></article>`;
+  }).join("");
+  const items = Object.entries(cartItems());
+  const count = items.reduce((sum, [, q]) => sum + q, 0);
+  const cart = `<aside class="card pad hw-cart" aria-label="Shopping cart"><div class="split"><span class="eyebrow"><i></i>Cart</span>${items.length ? `<button type="button" class="text-btn" data-cart-clear>Clear</button>` : ""}</div><h2>${count ? `${count} ${count === 1 ? "part" : "parts"}` : "Your cart is empty"}</h2>${items.length ? `<ul class="hw-cart-list">${items.map(([need, q]) => `<li><span>${esc(capital(partName(need)))}</span>${cartControl(need, q)}</li>`).join("")}</ul><div class="actions hw-cart-tools"><button type="button" class="quiet" data-cart-copy>${icon("check")} Copy list</button><button type="button" class="quiet" data-cart-download>${icon("download")} Download list</button></div>` : `<p>Add the parts you’ll need to buy. Rendi keeps the list with this build.</p>`}<small class="hw-note">A shopping list only: no prices or checkout. Take it to a store or a mentor.</small><div class="hw-go">${btn("Build it", "build", "primary", "wand-sparkles")}${btn("Check my junk drawer first", "drawer", "secondary", "box")}</div></aside>`;
+  return `${head}${hw.error ? `<p class="safety">${esc(hw.error)}</p>` : ""}<div class="hw-layout"><div class="hw-main"><section class="card pad"><div class="split"><span class="eyebrow"><i></i>Recommended for ${esc(s.brief.project_name)}</span>${hw.needs.length ? `<button type="button" class="text-btn" data-cart-all>${icon("plus")} Add everything</button>` : ""}</div><h2>Your parts list</h2><ul class="hw-list">${rows || "<li><p>No components are needed for these abilities.</p></li>"}</ul></section>${ideas ? `<section class="hw-ideas"><span class="kicker">make it more…</span><h2>Ideas to grow it</h2><p class="hint">Each idea adds its parts to your cart. The model stays as drawn.</p><div class="hw-idea-grid">${ideas}</div></section>` : ""}</div>${cart}</div>`;
+}
+function refocus(selector) {
+  requestAnimationFrame(() => (app.querySelector(selector) || $("main h1"))?.focus({ preventScroll: true }));
+}
 function drawer() {
   const keys = config.salvage_keys || [];
-  return `${toolHead("Parts inventory", "What’s in your drawer?", "Scan a photo or count items by hand. An empty drawer works too.")}<div class="input-layout">${uploadBox("drawer")}<section class="card pad"><div class="split"><h2>Manual inventory</h2><span id="item-count" class="source-tag"></span></div><div class="inventory-controls">${keys.map((k) => `<div class="counter"><span>${esc(k.label)}</span><div><button type="button" data-minus="${esc(k.id)}" aria-label="Remove one ${esc(k.label)}">${icon("minus")}</button><output id="qty-${esc(k.id)}">${s.items[k.id] || 0}</output><button type="button" data-plus="${esc(k.id)}" aria-label="Add one ${esc(k.label)}">${icon("plus")}</button></div></div>`).join("")}</div><div class="actions">${btn("Use manual inventory", "manual", "primary", "check")}</div></section></div>`;
+  return `${toolHead("Parts inventory", "What’s in your drawer?", "Scan a photo or count items by hand. An empty drawer works too.")}<div class="input-layout">${uploadBox("drawer")}<section class="card pad"><div class="split"><h2>Manual inventory</h2><span id="item-count" class="source-tag"></span></div><div class="inventory-controls">${keys.map((k) => `<div class="counter"><span>${esc(k.label)}</span><div><button type="button" data-minus="${esc(k.id)}" aria-label="Remove one ${esc(k.label)}">${icon("minus")}</button><output id="qty-${esc(k.id)}">${s.items[k.id] || 0}</output><button type="button" data-plus="${esc(k.id)}" aria-label="Add one ${esc(k.label)}">${icon("plus")}</button></div></div>`).join("")}</div><div class="actions">${btn("Use manual inventory", "manual", "primary", "check")}${s.model?.spec_id && s.brief_id ? btn("Back to parts", "hardware", "text-btn", "arrow-left") : ""}</div></section></div>`;
 }
 function tally() {
   const count = Object.values(s.items).reduce((a, b) => a + b, 0);
@@ -602,7 +677,7 @@ function inventoryRows() {
   const alternatives = (row) => row.alternatives?.length ? `<details class="alternatives"><summary>Other parts to consider</summary><p>These need changes and a compatibility check. They do not reduce the parts still needed.</p><ul>${row.alternatives.map((a) => `<li><strong>${esc(pretty(a.component))} ×${esc(a.qty)}</strong><br><small>Item ${esc(a.item_index + 1)} · ${esc(a.raw_name)}</small><p>${esc(a.note)}</p></li>`).join("")}</ul></details>` : "";
   const sources = p.to_source.map((r, i) => {
     const key = "s" + i, label = `${capital(pretty(r.need))} ×${r.qty}`;
-    return `<li class="part-row pg-row${pg.checked.has(key) ? " is-checked" : ""}" data-source-row="${i}">${check(key, label)}<details><summary><b>${esc(label)}</b><span class="pg-source buy">${icon("search")} To source</span></summary><p>${esc(r.suggestion)}</p>${allocationContext(r)}${alternatives(r)}</details></li>`;
+    return `<li class="part-row pg-row${pg.checked.has(key) ? " is-checked" : ""}" data-source-row="${i}">${check(key, label)}<details><summary><b>${esc(label)}</b><span class="pg-source buy">${icon("search")} To source${cartItems()[r.need] ? ' <span class="pg-incart">In cart</span>' : ""}</span></summary><p>${esc(r.suggestion)}</p>${allocationContext(r)}${alternatives(r)}</details></li>`;
   });
   return { rows: [...donors, ...sources], total: donors.length + sources.length };
 }
@@ -688,6 +763,7 @@ function render() {
     confirm: confirmBrief,
     sketch: sketches,
     model: modelView,
+    hardware: hardwareScreen,
     drawer,
     inventory,
     result,
@@ -1267,6 +1343,49 @@ app.addEventListener("click", async (e) => {
   if (t.dataset.stepGo) return goStep(playgroundState().step + Number(t.dataset.stepGo), `[data-step-go="${t.dataset.stepGo}"]`);
   if (t.dataset.step !== undefined) return goStep(Number(t.dataset.step), '[aria-current="step"]');
   if (t.dataset.check) return toggleCheck(t.dataset.check);
+  if (t.dataset.cartSet) {
+    setCart(t.dataset.cartSet, Number(t.dataset.qty));
+    render();
+    return refocus(`[data-cart-set="${CSS.escape(t.dataset.cartSet)}"]`);
+  }
+  if (t.dataset.cartAll !== undefined) {
+    for (const n of s.hardware?.needs || []) setCart(n.need, Math.max(cartItems()[n.need] || 0, n.qty));
+    render();
+    return refocus("[data-cart-all]");
+  }
+  if (t.dataset.cartIdea) {
+    const idea = s.hardware?.extras.find((e) => e.function === t.dataset.cartIdea);
+    if (!idea || s.cart.ideas.includes(idea.function)) return;
+    s.cart.ideas.push(idea.function);
+    for (const n of idea.needs) setCart(n.need, (cartItems()[n.need] || 0) + n.qty);
+    render();
+    return refocus(".hw-cart h2");
+  }
+  if (t.dataset.cartClear !== undefined) {
+    for (const need of Object.keys(cartItems())) setCart(need, 0);
+    s.cart.ideas = [];
+    saveCart();
+    render();
+    return refocus("[data-cart-all]");
+  }
+  if (t.dataset.cartCopy !== undefined) {
+    try {
+      await navigator.clipboard.writeText(cartList());
+      t.innerHTML = icon("check") + " Copied";
+    } catch {
+      message("Copy is blocked here. Use Download list instead.");
+    }
+    return;
+  }
+  if (t.dataset.cartDownload !== undefined) {
+    const blob = new Blob([`${s.brief.project_name} — shopping list\n\n${cartList()}\n`], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(s.brief.project_name || "robot").replace(/[^\w-]+/g, "-")}-shopping-list.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return;
+  }
   if (t.dataset.cover !== undefined) {
     const i = Number(t.dataset.cover);
     if (i !== coverIndex) {
@@ -1447,6 +1566,25 @@ app.addEventListener("click", async (e) => {
       );
       break;
     }
+    case "hardware":
+      goto("hardware");
+      loadHardware();
+      break;
+    case "build":
+      await job("Matching parts and writing your plan…", async () => {
+        if (!s.inv) {
+          s.inv = await multipart("/junk", { items: "[]" });
+          s.excluded.clear();
+        }
+        s.plan = await post("/plan", {
+          brief_id: s.brief_id,
+          spec_id: s.model.spec_id,
+          inventory_id: s.inv.inventory_id,
+          excluded_indices: [...s.excluded],
+        });
+        goto("result");
+      });
+      break;
     case "match":
       await job("Matching parts and writing your plan…", async () => {
         s.plan = await post("/plan", {
