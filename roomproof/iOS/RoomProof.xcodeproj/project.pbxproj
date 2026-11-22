@@ -1,0 +1,506 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		115BD3502BB0C69193764FF3 /* project-example.json in Resources */ = {isa = PBXBuildFile; fileRef = 4BC729FF77F2D8CAE8031DDB /* project-example.json */; };
+		19F8B4F2CAA6A1F752AD84D9 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD6589ACF07AC3651913DF6 /* APIClient.swift */; };
+		2BE089E4441D94A2064A86DF /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B37F654263C01C550FDB56 /* FloorPlanView.swift */; };
+		469CAA00AE0B8212247AB4AD /* NativeFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D61A6FDC05DDF0ADB9D288 /* NativeFlowTests.swift */; };
+		4995A0173498885CCF75CF5F /* RoomProofApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDCB9D52707FB99456038589 /* RoomProofApp.swift */; };
+		52D824EA38AE2106657286A3 /* RoomSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97B09F8C0EA4F83C597F127E /* RoomSceneView.swift */; };
+		56200255F17AAFFEF5A58498 /* RoomProofCore in Frameworks */ = {isa = PBXBuildFile; productRef = A0DFE17251FDE97851CF8931 /* RoomProofCore */; };
+		5E74DB745DF8E02A237C3892 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = C2520DFF2A5C606A5F65A721 /* catalog.json */; };
+		6224BC9785FBFDEFAA523F37 /* RoomProofCore in Frameworks */ = {isa = PBXBuildFile; productRef = F4F81C04CB5A20C49658B1D0 /* RoomProofCore */; };
+		66D89BEB42936BC57C66F48D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495FCE65DEE04385627FFAAA /* ContentView.swift */; };
+		7CD98FC83EEC3F59BAEA092F /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15ADCC7DDB6A4F45C8BE4BA2 /* ProjectStore.swift */; };
+		EA44B21A143A732CB6B4A9B3 /* FitSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ABA43A9C6BAB4D97E683D7 /* FitSheet.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E1EF2BE557832E7A9C383C8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27EB140CB44F5DC174FA7D17 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF048A9BDFBC62B31197A2CE;
+			remoteInfo = RoomProof;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		15ADCC7DDB6A4F45C8BE4BA2 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
+		2754106B6FF5EBADBAD9E717 /* RoomProofCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RoomProofCore; path = ../RoomProofCore; sourceTree = SOURCE_ROOT; };
+		39BD38D992E833BF66072588 /* RoomProofTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RoomProofTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		495FCE65DEE04385627FFAAA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4BC729FF77F2D8CAE8031DDB /* project-example.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "project-example.json"; sourceTree = "<group>"; };
+		5CD6589ACF07AC3651913DF6 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		81ABA43A9C6BAB4D97E683D7 /* FitSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitSheet.swift; sourceTree = "<group>"; };
+		97B09F8C0EA4F83C597F127E /* RoomSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomSceneView.swift; sourceTree = "<group>"; };
+		C2520DFF2A5C606A5F65A721 /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
+		DB99D836B62A6D54FC226920 /* RoomProof.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RoomProof.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5ABF19D86A283DAB37F290D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E7B37F654263C01C550FDB56 /* FloorPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanView.swift; sourceTree = "<group>"; };
+		EDCB9D52707FB99456038589 /* RoomProofApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomProofApp.swift; sourceTree = "<group>"; };
+		F2D61A6FDC05DDF0ADB9D288 /* NativeFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFlowTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4ADF9C403D332E743C45A06F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6224BC9785FBFDEFAA523F37 /* RoomProofCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7AC066799BF11ED89342ACF0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56200255F17AAFFEF5A58498 /* RoomProofCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		23C3E13A97F7C05E37F1B249 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C2520DFF2A5C606A5F65A721 /* catalog.json */,
+				4BC729FF77F2D8CAE8031DDB /* project-example.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5488AA8E759BDDBF2BCD4C78 /* RoomProof */ = {
+			isa = PBXGroup;
+			children = (
+				5CD6589ACF07AC3651913DF6 /* APIClient.swift */,
+				495FCE65DEE04385627FFAAA /* ContentView.swift */,
+				81ABA43A9C6BAB4D97E683D7 /* FitSheet.swift */,
+				E7B37F654263C01C550FDB56 /* FloorPlanView.swift */,
+				E5ABF19D86A283DAB37F290D /* Info.plist */,
+				15ADCC7DDB6A4F45C8BE4BA2 /* ProjectStore.swift */,
+				EDCB9D52707FB99456038589 /* RoomProofApp.swift */,
+				97B09F8C0EA4F83C597F127E /* RoomSceneView.swift */,
+				23C3E13A97F7C05E37F1B249 /* Resources */,
+			);
+			path = RoomProof;
+			sourceTree = "<group>";
+		};
+		AFE9373BF0340E0C1BEA327F /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				2754106B6FF5EBADBAD9E717 /* RoomProofCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		E316E586C136FF79731064CC = {
+			isa = PBXGroup;
+			children = (
+				AFE9373BF0340E0C1BEA327F /* Packages */,
+				5488AA8E759BDDBF2BCD4C78 /* RoomProof */,
+				F3FA45A7EE7B6132DE87302F /* RoomProofTests */,
+				F40173D2B1AF0F0A75BEE5ED /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F3FA45A7EE7B6132DE87302F /* RoomProofTests */ = {
+			isa = PBXGroup;
+			children = (
+				F2D61A6FDC05DDF0ADB9D288 /* NativeFlowTests.swift */,
+			);
+			path = RoomProofTests;
+			sourceTree = "<group>";
+		};
+		F40173D2B1AF0F0A75BEE5ED /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DB99D836B62A6D54FC226920 /* RoomProof.app */,
+				39BD38D992E833BF66072588 /* RoomProofTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AF048A9BDFBC62B31197A2CE /* RoomProof */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 216D2567567048D9067981DA /* Build configuration list for PBXNativeTarget "RoomProof" */;
+			buildPhases = (
+				68F6B8275272D13BC8CB5EB8 /* Sources */,
+				997FF60BCEBC96936797FE82 /* Resources */,
+				4ADF9C403D332E743C45A06F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RoomProof;
+			packageProductDependencies = (
+				F4F81C04CB5A20C49658B1D0 /* RoomProofCore */,
+			);
+			productName = RoomProof;
+			productReference = DB99D836B62A6D54FC226920 /* RoomProof.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C86032A11F1D97F750479468 /* RoomProofTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6F9CC4A7BD02F7DE644D12BC /* Build configuration list for PBXNativeTarget "RoomProofTests" */;
+			buildPhases = (
+				543BC23017A9428740A67026 /* Sources */,
+				7AC066799BF11ED89342ACF0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F9E64588757CA76F202F3FE3 /* PBXTargetDependency */,
+			);
+			name = RoomProofTests;
+			packageProductDependencies = (
+				A0DFE17251FDE97851CF8931 /* RoomProofCore */,
+			);
+			productName = RoomProofTests;
+			productReference = 39BD38D992E833BF66072588 /* RoomProofTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		27EB140CB44F5DC174FA7D17 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					AF048A9BDFBC62B31197A2CE = {
+						ProvisioningStyle = Automatic;
+					};
+					C86032A11F1D97F750479468 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D246898073C417C1622A2F20 /* Build configuration list for PBXProject "RoomProof" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E316E586C136FF79731064CC;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8F5A3252CFFAEF441CB05744 /* XCLocalSwiftPackageReference "../RoomProofCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F40173D2B1AF0F0A75BEE5ED /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AF048A9BDFBC62B31197A2CE /* RoomProof */,
+				C86032A11F1D97F750479468 /* RoomProofTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		997FF60BCEBC96936797FE82 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E74DB745DF8E02A237C3892 /* catalog.json in Resources */,
+				115BD3502BB0C69193764FF3 /* project-example.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		543BC23017A9428740A67026 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				469CAA00AE0B8212247AB4AD /* NativeFlowTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		68F6B8275272D13BC8CB5EB8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				19F8B4F2CAA6A1F752AD84D9 /* APIClient.swift in Sources */,
+				66D89BEB42936BC57C66F48D /* ContentView.swift in Sources */,
+				EA44B21A143A732CB6B4A9B3 /* FitSheet.swift in Sources */,
+				2BE089E4441D94A2064A86DF /* FloorPlanView.swift in Sources */,
+				7CD98FC83EEC3F59BAEA092F /* ProjectStore.swift in Sources */,
+				4995A0173498885CCF75CF5F /* RoomProofApp.swift in Sources */,
+				52D824EA38AE2106657286A3 /* RoomSceneView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F9E64588757CA76F202F3FE3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF048A9BDFBC62B31197A2CE /* RoomProof */;
+			targetProxy = E1EF2BE557832E7A9C383C8D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3F8D6330A40A40D8F54CB49A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tejask.RoomProofTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoomProof.app/RoomProof";
+			};
+			name = Debug;
+		};
+		9487DAC0B587AE2B95316C93 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoomProof/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tejask.RoomProof;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A81216B8758757B194CA9C5A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tejask.RoomProofTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoomProof.app/RoomProof";
+			};
+			name = Release;
+		};
+		B1C401D9D12CCAFEEBD839DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D2089C654C8C48BF739BD474 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F7E4568A39E3698E57B89A77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoomProof/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tejask.RoomProof;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		216D2567567048D9067981DA /* Build configuration list for PBXNativeTarget "RoomProof" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F7E4568A39E3698E57B89A77 /* Debug */,
+				9487DAC0B587AE2B95316C93 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6F9CC4A7BD02F7DE644D12BC /* Build configuration list for PBXNativeTarget "RoomProofTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F8D6330A40A40D8F54CB49A /* Debug */,
+				A81216B8758757B194CA9C5A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D246898073C417C1622A2F20 /* Build configuration list for PBXProject "RoomProof" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D2089C654C8C48BF739BD474 /* Debug */,
+				B1C401D9D12CCAFEEBD839DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8F5A3252CFFAEF441CB05744 /* XCLocalSwiftPackageReference "../RoomProofCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../RoomProofCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A0DFE17251FDE97851CF8931 /* RoomProofCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RoomProofCore;
+		};
+		F4F81C04CB5A20C49658B1D0 /* RoomProofCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RoomProofCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 27EB140CB44F5DC174FA7D17 /* Project object */;
+}

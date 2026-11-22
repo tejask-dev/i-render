@@ -1,0 +1,55 @@
+name: RoomProof
+options:
+  bundleIdPrefix: dev.tejask
+  deploymentTarget:
+    iOS: '18.0'
+packages:
+  RoomProofCore:
+    path: ../RoomProofCore
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    IPHONEOS_DEPLOYMENT_TARGET: '18.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGN_STYLE: Automatic
+targets:
+  RoomProof:
+    type: application
+    platform: iOS
+    sources:
+      - path: RoomProof
+    dependencies:
+      - package: RoomProofCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.tejask.RoomProof
+        MARKETING_VERSION: '0.1.0'
+        CURRENT_PROJECT_VERSION: '1'
+        GENERATE_INFOPLIST_FILE: YES
+    info:
+      path: RoomProof/Info.plist
+      properties:
+        CFBundleDisplayName: RoomProof
+        UILaunchScreen: {}
+        NSCameraUsageDescription: Photograph your workspace to suggest design preferences. You confirm all measurements.
+        NSLocalNetworkUsageDescription: Connect to your paired Mac for Gemini and retailer sourcing. Your API keys stay on the Mac.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  RoomProofTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [RoomProofTests]
+    dependencies:
+      - target: RoomProof
+      - package: RoomProofCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  RoomProof:
+    build:
+      targets:
+        RoomProof: all
+    test:
+      targets: [RoomProofTests]

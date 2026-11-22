@@ -11,6 +11,8 @@ dist/
 .devpost-hackathon-state.json
 .ruff_cache/
 .DS_Store
+xcuserdata/
+*.xcuserstate
 .var/
 *.log
 team-specs/
