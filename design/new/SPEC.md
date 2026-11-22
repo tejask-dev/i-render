@@ -106,7 +106,14 @@ Copy as built (change in `landingWords` / `landingLines`):
 | Search / filter | *(optional)* filter cards by part or action | Replaces Notebook **Find a memory** |
 | Starter robots | Wheelbot / Armbot / Blobbot as cards that prefill a new project? | Q7 |
 
-### 2 · Render · Step 1 — Identity ("mystical fog")
+### 2 · Render · Step 1 — Identity ("mystical fog") — ✅ built (same three questions)
+Implemented in `interview()` / `confirmBrief()` in [frontend/src.js](../../frontend/src.js); styles under "Render · Step 1" in [frontend/style.css](../../frontend/style.css).
+- A midnight stage with five slow-drifting fog banks (CSS, clock-synced so re-renders never jump) and grain. Rendi floats beside the glass card (above it on phones).
+- One question per glass card: progress orbs, *Identity · N of 3* kicker, and the question **rises out of the blur** only when the question changes (not on pill taps).
+- Inputs and pills are glass on dark; a selected pill glows white. Dictation and memory hints carry over. The last button reads **Reveal my robot**.
+- **Reveal** (confirm): *the mist clears…*, an editable big name, glass trait tiles (Scale, Vibe, Adventure) with edit pencils, the memory note, then **Confirm brief**.
+- Reduced motion: still fog, no rise.
+- Still open (Q8): extra "identity" questions beyond these three.
 | Function | Behaviour | Source |
 | --- | --- | --- |
 | One question at a time | Each question rises out of animated fog inside a glass panel; the answer shapes the next | Replaces the 3-question interview |

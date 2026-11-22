@@ -2647,3 +2647,301 @@ details li {
     display: none;
   }
 }
+
+/* ---------- Render · Step 1: the misty identity stage ---------- */
+.misty {
+  --fog-t: 0s;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vw, 40px);
+  min-height: min(760px, calc(100vh - 190px));
+  padding: clamp(28px, 5vw, 64px) clamp(16px, 4vw, 48px);
+  border-radius: var(--r-xl);
+  color: #fff;
+  background:
+    radial-gradient(70% 60% at 50% 110%, rgb(55 129 252 / 0.55), transparent 70%),
+    radial-gradient(50% 40% at 50% 0%, rgb(11 44 177 / 0.8), transparent 70%),
+    var(--midnight);
+}
+.misty::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain);
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.fog {
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  pointer-events: none;
+}
+.fog i {
+  position: absolute;
+  width: 70%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(226 234 255 / 0.5), rgb(127 169 255 / 0.2) 55%, transparent);
+  filter: blur(36px);
+  animation: fog-drift 48s ease-in-out infinite alternate;
+  animation-delay: var(--fog-t);
+}
+.fog i:nth-child(1) { left: -10%; top: 62%; animation-duration: 52s; }
+.fog i:nth-child(2) { left: 40%; top: 58%; width: 80%; animation-duration: 64s; animation-direction: alternate-reverse; }
+.fog i:nth-child(3) { left: 10%; top: 20%; width: 60%; height: 34%; opacity: 0.6; animation-duration: 74s; }
+.fog i:nth-child(4) { left: 55%; top: 10%; width: 50%; opacity: 0.45; animation-duration: 58s; animation-direction: alternate-reverse; }
+.fog i:nth-child(5) { left: 5%; top: 74%; width: 110%; height: 34%; opacity: 0.95; animation-duration: 40s; }
+@keyframes fog-drift {
+  0% { transform: translate3d(-6%, 2%, 0) scale(1); }
+  50% { transform: translate3d(5%, -4%, 0) scale(1.12); }
+  100% { transform: translate3d(10%, 3%, 0) scale(0.96); }
+}
+.misty-rendi {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 150px;
+}
+.misty-rendi .companion {
+  display: grid;
+  justify-items: center;
+  background: none;
+  overflow: visible;
+}
+.misty-rendi .companion::after {
+  display: none;
+}
+.misty-rendi .rendi-face {
+  width: 120px;
+  height: 120px;
+  flex: none;
+}
+.misty-rendi .companion-caption {
+  padding: 0.2rem 0 0;
+  text-align: center;
+}
+.misty-rendi .companion-caption strong {
+  font-size: 1rem;
+}
+.misty-rendi .companion-caption span {
+  font-size: 1.05rem;
+}
+.misty-card {
+  position: relative;
+  width: min(680px, 100%);
+  padding: clamp(1.6rem, 4vw, 2.8rem);
+  border-radius: var(--r-xl);
+  background: rgb(255 255 255 / 0.09);
+  border: 1px solid rgb(255 255 255 / 0.26);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 40px 90px rgb(0 0 0 / 0.35);
+}
+.misty-card.is-entering > * {
+  animation: mist-rise 0.9s var(--ease) both;
+}
+.misty-card.is-entering > :nth-child(2) { animation-delay: 0.06s; }
+.misty-card.is-entering > :nth-child(3) { animation-delay: 0.14s; }
+.misty-card.is-entering > :nth-child(4) { animation-delay: 0.24s; }
+.misty-card.is-entering > :nth-child(n + 5) { animation-delay: 0.34s; }
+@keyframes mist-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(10px);
+  }
+}
+.misty-orbs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+.misty-orbs span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.22);
+  transition: width 0.3s var(--ease);
+}
+.misty-orbs .is-done {
+  background: var(--pale);
+}
+.misty-orbs .is-on {
+  width: 28px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 14px rgb(191 214 255 / 0.9);
+}
+.misty-kicker {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+  line-height: 1;
+  color: var(--pale);
+}
+.misty-card h1 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+  letter-spacing: -0.05em;
+}
+.misty-hint {
+  color: var(--pale-2);
+  font-size: 1.02rem;
+}
+.misty-card form {
+  margin-top: 1.4rem;
+}
+.misty label,
+.misty legend {
+  color: var(--pale-2);
+}
+.misty label > span {
+  color: var(--pale);
+}
+.misty input:not([type="file"]),
+.misty textarea {
+  color: #fff;
+  background: rgb(3 25 91 / 0.45);
+  border-color: rgb(255 255 255 / 0.32);
+}
+.misty input::placeholder,
+.misty textarea::placeholder {
+  color: rgb(217 228 255 / 0.55);
+}
+.misty input:not([type="file"]):focus,
+.misty textarea:focus {
+  border-color: #fff;
+  box-shadow: 0 0 0 4px rgb(191 214 255 / 0.25);
+}
+.misty .choice {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.3);
+}
+.misty .choice:hover {
+  border-color: #fff;
+}
+.misty .choice[aria-pressed="true"] {
+  color: var(--midnight);
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 18px rgb(191 214 255 / 0.55);
+}
+.misty .speech-tools .quiet {
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.28);
+}
+.misty .speech-tools small {
+  color: var(--pale);
+}
+.misty .quiet {
+  color: var(--pale-2);
+}
+.misty .quiet:hover {
+  color: #fff;
+}
+.misty button:focus-visible,
+.misty input:focus-visible,
+.misty textarea:focus-visible {
+  outline-color: #fff;
+}
+.misty .memory-note {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.2);
+}
+.misty .memory-note p {
+  color: var(--pale-2);
+}
+.misty .memory-note > svg {
+  color: var(--pale);
+}
+/* Reveal (confirm) */
+.reveal-name {
+  margin-top: 1.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.reveal-name input:not([type="file"]) {
+  font: 700 clamp(1.8rem, 3.6vw, 2.6rem) / 1.1 var(--display);
+  letter-spacing: -0.04em;
+  text-transform: none;
+  padding: 0.6rem 0.9rem;
+}
+.reveal-traits {
+  display: grid;
+  gap: 10px;
+  margin: 1rem 0 1.4rem;
+}
+.reveal-traits > div {
+  grid-template-columns: 96px 1fr auto;
+  padding: 0.85rem 0.6rem 0.85rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: var(--r);
+  background: rgb(255 255 255 / 0.06);
+}
+.reveal-traits dt {
+  color: var(--pale) !important;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400 !important;
+  font-size: 1.15rem !important;
+}
+.reveal-traits dd {
+  color: #fff;
+}
+.is-reveal .misty-card {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 0 80px rgb(127 169 255 / 0.25),
+    0 40px 90px rgb(0 0 0 / 0.35);
+}
+@media (max-width: 680px) {
+  .misty {
+    display: block;
+    min-height: 0;
+    padding: 14px 12px 16px;
+  }
+  .misty-rendi {
+    width: auto;
+    margin-bottom: 8px;
+  }
+  .misty-rendi .companion {
+    display: flex;
+  }
+  .misty-rendi .companion-caption {
+    text-align: left;
+    padding-left: 0.3rem;
+  }
+  .misty-rendi .rendi-face {
+    width: 64px;
+    height: 64px;
+  }
+  .misty-card {
+    padding: 1.3rem 1.1rem;
+  }
+  .reveal-traits > div {
+    grid-template-columns: 1fr auto;
+  }
+  .reveal-traits dt {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fog i,
+  .misty-card.is-entering > * {
+    animation: none;
+  }
+}

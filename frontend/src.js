@@ -313,27 +313,30 @@ function interview() {
       )
       .join("")}</div></fieldset>`,
   ];
-  return `<div class="interview-layout">${companion()}<div class="card form-card"><span class="eyebrow"><i></i>Project brief · ${s.slot + 1} of 3</span>${title(question())}<p>${["Palm-sized or floor-roaming? Let’s give it room to move.", "Give it a little personality.", "Tell me what it does when nobody’s watching."][s.slot]}</p><form id="interview-form">${blocks[s.slot]}${speechTools()}<div class="actions"><button class="primary" type="submit">${s.editing ? "Update brief" : s.slot === 2 ? "Review brief" : "Continue"} ${icon("arrow-right")}</button>${s.slot > 0 && !s.editing ? btn("Back", "previous", "text-btn", "") : ""}</div></form>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>Rendi remembers ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)} · ${s.hits[0].seeded ? "example memory" : "saved project"}</p></div></div>` : ""}</div></div>`;
+  const memory = s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>Rendi remembers ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)} · ${s.hits[0].seeded ? "example memory" : "saved project"}</p></div></div>` : "";
+  const orbs = [0, 1, 2].map((n) => `<span class="${n === s.slot ? "is-on" : n < s.slot ? "is-done" : ""}"></span>`).join("");
+  return `<section class="misty" style="${fogClock()}" aria-label="Project identity">${fog()}<div class="misty-rendi">${companion()}</div><div class="misty-card${mistEntering()}"><div class="misty-orbs" aria-hidden="true">${orbs}</div><span class="misty-kicker">Identity · ${s.slot + 1} of 3</span>${title(question())}<p class="misty-hint">${["Palm-sized or floor-roaming? Let’s give it room to move.", "Give it a little personality.", "Tell me what it does when nobody’s watching."][s.slot]}</p><form id="interview-form">${blocks[s.slot]}${speechTools()}<div class="actions"><button class="primary on-dark" type="submit">${s.editing ? "Update brief" : s.slot === 2 ? "Reveal my robot" : "Continue"} ${icon("arrow-right")}</button>${s.slot > 0 && !s.editing ? btn("Back", "previous", "text-btn on-dark", "") : ""}</div></form>${memory}</div></section>`;
 }
+let mistKey = "";
+function mistEntering() {
+  const key = s.stage + ":" + s.slot + ":" + s.editing;
+  const entering = key !== mistKey;
+  mistKey = key;
+  return entering ? " is-entering" : "";
+}
+const fogClock = () => `--fog-t:-${((Date.now() / 1000) % 600).toFixed(2)}s`;
+const fog = () => `<div class="fog" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>`;
 function confirmBrief() {
   const b = s.brief;
-  return `<div class="interview-layout">${companion()}<div>${toolHead("Project brief", "Did I get that right?", "Change any answer before we move to your sketch.")}<form id="confirm-form" class="card form-card"><label>Project name<input id="name" maxlength="60" required value="${esc(b.project_name)}"></label><dl class="summary">${[
+  const traits = [
     ["Scale", pretty(b.scale) + " · " + b.approx_size_cm + " cm"],
     ["Vibe", b.vibe.join(", ")],
-    [
-      "Adventure",
-      b.adventure_aura +
-        " · " +
-        b.must_do.map((k) => actionLabels[k]).join(", "),
-    ],
-  ]
-    .map(
-      ([k, v], i) =>
-        `<div><dt>${k}</dt><dd>${esc(v)}</dd><button type="button" class="quiet" data-edit="${i}" aria-label="Edit ${k}">${icon("pencil")}</button></div>`,
-    )
-    .join(
-      "",
-    )}</dl>${s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>${s.hits[0].seeded ? "Example memory" : "From your notebook"} · ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)}</p></div></div>` : ""}<button class="primary" type="submit">Confirm brief ${icon("check")}</button></form></div></div>`;
+    ["Adventure", b.adventure_aura + " · " + b.must_do.map((k) => actionLabels[k]).join(", ")],
+  ];
+  const memory = s.hits.length ? `<div class="memory-note">${icon("book-open")}<div><strong>${s.hits[0].seeded ? "Example memory" : "From your notebook"} · ${esc(s.hits[0].project_name)}</strong><p>${esc(s.hits[0].note)}</p></div></div>` : "";
+  return `<section class="misty is-reveal" style="${fogClock()}" aria-label="Your robot’s identity">${fog()}<div class="misty-rendi">${companion()}</div><form id="confirm-form" class="misty-card reveal-card${mistEntering()}"><span class="misty-kicker">the mist clears…</span>${title("Did I get that right?")}<p class="misty-hint">Change any answer before we move to your sketch.</p><label class="reveal-name">Project name<input id="name" maxlength="60" required value="${esc(b.project_name)}"></label><dl class="summary reveal-traits">${traits
+    .map(([k, v], i) => `<div><dt>${k}</dt><dd>${esc(v)}</dd><button type="button" class="quiet" data-edit="${i}" aria-label="Edit ${k}">${icon("pencil")}</button></div>`)
+    .join("")}</dl>${memory}<div class="actions"><button class="primary on-dark" type="submit">Confirm brief ${icon("check")}</button></div></form></section>`;
 }
 function availableProviders() {
   return config.vision_providers || {
@@ -668,6 +671,7 @@ function render() {
   inputActivity = "idle";
   landingStop?.();
   landingStop = null;
+  if (s.stage !== "interview" && s.stage !== "confirm") mistKey = "";
   if (s.stage === "landing") {
     app.innerHTML = landing();
     import("./landing.js")
